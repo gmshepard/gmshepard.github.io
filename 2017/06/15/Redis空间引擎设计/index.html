@@ -84,7 +84,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="Redis,GIS," />
 
 
 
@@ -100,12 +100,25 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="gmshepard's tech blog">
-<meta property="og:url" content="http://gmshepard.github.io/index.html">
+<meta name="description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis空间引擎设计">
+<meta property="og:url" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/index.html">
 <meta property="og:site_name" content="gmshepard's tech blog">
+<meta property="og:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta property="og:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-1.jpg">
+<meta property="og:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-2.jpg">
+<meta property="og:updated_time" content="2017-08-02T11:28:59.549Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="gmshepard's tech blog">
+<meta name="twitter:title" content="Redis空间引擎设计">
+<meta name="twitter:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta name="twitter:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-1.jpg">
 
 
 
@@ -133,13 +146,13 @@
 
 
 
-  <link rel="canonical" href="http://gmshepard.github.io/"/>
+  <link rel="canonical" href="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/"/>
 
 
 
 
 
-  <title>gmshepard's tech blog</title>
+  <title>Redis空间引擎设计 | gmshepard's tech blog</title>
   
 
 
@@ -164,9 +177,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-   page-home 
- ">
+  <div class="container sidebar-position-left page-post-detail ">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -259,9 +270,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -287,9 +298,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/15/Redis空间引擎设计/" itemprop="url">Redis空间引擎设计</a></h1>
+          <h1 class="post-title" itemprop="name headline">Redis空间引擎设计</h1>
         
 
         <div class="post-meta">
@@ -358,9 +367,7 @@
       
 
       
-        
-          
-            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。</p>
 <blockquote>
 <p>GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区域，只要矩形区域足够小，达到所需精度即可。</p>
 </blockquote>
@@ -595,779 +602,74 @@
 <h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://yq.aliyun.com/articles/62844" target="_blank" rel="external">阿里云Redis GEO地理位置功能</a></p>
 <p><a href="https://redis.io/" target="_blank" rel="external">Redis官网</a></p>
 
-          
+      
+    </div>
+
+    <div>
+      
         
+
       
     </div>
 
     <div>
       
-    </div>
+        
 
-    <div>
       
     </div>
 
     <div>
+      
+        
+
       
     </div>
 
     <footer class="post-footer">
       
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="gmshepard">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="gmshepard's tech blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/05/16/AnlysisofAlgorithm/" itemprop="url">Anlysis of Algorithm</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-16T10:25:35+08:00">
-                2017-05-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
+        <div class="post-tags">
           
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/算法学习/" itemprop="url" rel="index">
-                    <span itemprop="name">算法学习</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
           
-
+            <a href="/tags/GIS/" rel="tag"># GIS</a>
           
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
         </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Scientific-method-applied-to-analysis-of-algorithms"><a href="#Scientific-method-applied-to-analysis-of-algorithms" class="headerlink" title="Scientific method applied to analysis of algorithms"></a>Scientific method applied to analysis of algorithms</h2><p>A framework for perdicting performance and comparing algorithms.</p>
-<ul>
-<li><p><strong>Observe</strong> some feature of the natural world.</p>
-</li>
-<li><p><strong>Hypothesize</strong> a model that is consistent with the observations.</p>
-</li>
-<li><p><strong>Predict</strong> events using the hypothesis.</p>
-</li>
-<li><p><strong>Verify</strong> the predictions by making further observations.</p>
-</li>
-<li><p><strong>Validate</strong> by repeating until the hypothesis and observations agree.</p>
-</li>
-</ul>
-<h2 id="Common-order-of-growth-classifications"><a href="#Common-order-of-growth-classifications" class="headerlink" title="Common order-of-growth classifications"></a>Common order-of-growth classifications</h2><p><img src="/2017/05/16/AnlysisofAlgorithm/order-of-growth.jpg" alt=""></p>
-<h2 id="Theory-of-algorithms"><a href="#Theory-of-algorithms" class="headerlink" title="Theory of algorithms"></a>Theory of algorithms</h2><h3 id="Types-of-analyses"><a href="#Types-of-analyses" class="headerlink" title="Types of analyses"></a>Types of analyses</h3><p><strong>Best case.</strong> Lower bound on cost.</p>
-<ul>
-<li>Determined by “easiest” input.</li>
-<li>Provides a goal for all inputs.</li>
-</ul>
-<p><strong>Worst case.</strong> Upper bound on cost.</p>
-<ul>
-<li>Determined by “most difficult” input.</li>
-<li>Provides a guarantee for all inputs.</li>
-</ul>
-<p><strong>Average case.</strong> Expected cost for random input.</p>
-<ul>
-<li>Need a model for “random” input.</li>
-<li>Provides a way to predict performance.</li>
-</ul>
-<h3 id="Commonly-used-notations-in-the-theory-of-algorithms"><a href="#Commonly-used-notations-in-the-theory-of-algorithms" class="headerlink" title="Commonly-used notations in the theory of algorithms"></a>Commonly-used notations in the theory of algorithms</h3><p><img src="/2017/05/16/AnlysisofAlgorithm/commonly-used-notations.jpg" alt=""></p>
-<h3 id="Theory-of-algorithms-example-of-1-Sum"><a href="#Theory-of-algorithms-example-of-1-Sum" class="headerlink" title="Theory of algorithms: example of 1-Sum"></a>Theory of algorithms: example of 1-Sum</h3><p><strong>Goals.</strong></p>
-<ul>
-<li>Establish “difficulty” of a problem and develop “optimal” algorithms.</li>
-<li>Ex.1-Sum=”Is there a 0 in the array”</li>
-</ul>
-<p><strong>Upper bound.</strong></p>
-<ul>
-<li>Ex. Brute-force algorithm for 1-Sum: Look at every array entry.</li>
-<li>Running time of the optimal algorithm for 1-Sum is O(N)</li>
-</ul>
-<p><strong>Lower bound.</strong></p>
-<ul>
-<li>Ex. Have to examine all N entries (any unexamined one might be 0).</li>
-<li>Running time of the optimal algorithm for 1-SUM is Ω(N).</li>
-</ul>
-<p><strong>Optimal algorithm.</strong></p>
-<ul>
-<li>Lower bound equals upper bound (to within a constant factor).</li>
-<li>Ex. Brute-force algorithm for 1-SUM is optimal: its running time is Θ(N ).</li>
-</ul>
-<h3 id="Theory-of-algorithms-example-of-3-Sum"><a href="#Theory-of-algorithms-example-of-3-Sum" class="headerlink" title="Theory of algorithms: example of 3-Sum"></a>Theory of algorithms: example of 3-Sum</h3><p><strong>Goals.</strong></p>
-<ul>
-<li>Establish “difficulty” of a problem and develop “optimal” algorithms.</li>
-<li>Ex.3-Sum</li>
-</ul>
-<p><strong>Upper bound.</strong></p>
-<ul>
-<li>Ex. Improved algorithm for 3-Sum.</li>
-<li>Running time of the optimal algorithm for 3-Sum is O(N^2logN )</li>
-</ul>
-<p><strong>Lower bound.</strong></p>
-<ul>
-<li>Ex. Have to examine all N entries for 3-Sum.</li>
-<li>Running time of the optimal algorithm for 3-SUM is Ω(N).</li>
-</ul>
-<h2 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h2><h3 id="Basics"><a href="#Basics" class="headerlink" title="Basics"></a>Basics</h3><ul>
-<li><strong>Bit.</strong> 0 or 1.</li>
-<li><strong>Byte.</strong> 8 bits.</li>
-<li><strong>Megabyte(MB).</strong> 1 million or 2^20 bytes.</li>
-<li><strong>Gigabyte(GB).</strong> 1 billion or 2^30 bytes.</li>
-</ul>
-<h3 id="Typical-memory-usage-for-primitive-types-and-arrays"><a href="#Typical-memory-usage-for-primitive-types-and-arrays" class="headerlink" title="Typical memory usage for primitive types and arrays"></a>Typical memory usage for primitive types and arrays</h3><p><img src="/2017/05/16/AnlysisofAlgorithm/memory-usage.jpg" alt=""></p>
-<h3 id="Typical-memory-usage-for-objects-in-Java"><a href="#Typical-memory-usage-for-objects-in-Java" class="headerlink" title="Typical memory usage for objects in Java"></a>Typical memory usage for objects in Java</h3><ul>
-<li><strong>Object overhead</strong> 16 bytes.</li>
-<li><strong>Reference</strong> 8 bytes.</li>
-<li><strong>Padding</strong> Each object uses a multiple of 8 bytes.</li>
-</ul>
-<h3 id="Typical-memory-usage-summary"><a href="#Typical-memory-usage-summary" class="headerlink" title="Typical memory usage summary"></a>Typical memory usage summary</h3><p><strong>Total memroy usage for a data type value:</strong></p>
-<ul>
-<li>Primitive type: 4 bytes for int, 8 bytes for double, …</li>
-<li>Object reference: 8 bytes.</li>
-<li>Array: 24 bytes + memory for each array entry.</li>
-<li>Object: 16 bytes + memory for each instance variable + 8 bytes if inner class (for pointer to enclosing class).</li>
-<li>Padding: round up to multiple of 8 bytes.</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
       
 
       
       
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
       
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://gmshepard.github.io/2017/05/15/Union-Find/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="gmshepard">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="gmshepard's tech blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/05/15/Union-Find/" itemprop="url">Union-Find学习笔记</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-15T18:13:00+08:00">
-                2017-05-15
-              </time>
+              <a href="/2017/05/16/AnlysisofAlgorithm/" rel="next" title="Anlysis of Algorithm">
+                <i class="fa fa-chevron-left"></i> Anlysis of Algorithm
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/算法学习/" itemprop="url" rel="index">
-                    <span itemprop="name">算法学习</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-            <h2 id="Dynamic-Connectivity"><a href="#Dynamic-Connectivity" class="headerlink" title="Dynamic Connectivity"></a>Dynamic Connectivity</h2><p>Given a set of N objects.</p>
-<ul>
-<li>Union command: connect two objects.</li>
-<li>Find/connected query: is there a path connecting the two objects?</li>
-</ul>
-<p><img src="/2017/05/15/Union-Find/dynamic_connecty.jpg" alt="dynamic_connecty"> </p>
-<h2 id="Modeling-the-objects"><a href="#Modeling-the-objects" class="headerlink" title="Modeling the objects"></a>Modeling the objects</h2><p>Applications involve Union-Find.</p>
-<ul>
-<li>Pixels in a digital photo.</li>
-<li>Computers in a network.</li>
-<li>Friends in a social network.</li>
-<li>Transistor in a computer chip.</li>
-<li>Elements in a mathematical set.</li>
-<li>Variable names in Fortran program.</li>
-<li>Metallic sites in a composite system.</li>
-</ul>
-<h2 id="Modeling-the-connections"><a href="#Modeling-the-connections" class="headerlink" title="Modeling the connections"></a>Modeling the connections</h2><p>Assume “is connected to” is an equivalence relation:</p>
-<ul>
-<li>Reflexive(自反关系): <em>p</em> is connected to <em>p</em>.</li>
-<li>Symmetric(对称关系): if <em>p</em> is connected to <em>q</em>, then <em>q</em> is connected to <em>p</em>.</li>
-<li>Transitive(传递关系): if <em>p</em> is connected to <em>q</em> and <em>q</em> is connected to <em>r</em>, then <em>p</em> is connected to <em>r</em>.</li>
-</ul>
-<p><strong>Connected components:</strong> Maximal set of objects that are mutually connected.</p>
-
-<h2 id="Implementing-the-operations"><a href="#Implementing-the-operations" class="headerlink" title="Implementing the operations"></a>Implementing the operations</h2><p><strong>Find query.</strong> Check if two objects are in the same component.</p>
-<p><strong>Union command.</strong> Replace components containing two objects with their union.</p>
-<h2 id="Union-find-data-type-API"><a href="#Union-find-data-type-API" class="headerlink" title="Union-find data type(API)"></a>Union-find data type(API)</h2><img src="/2017/05/15/Union-Find/API.jpg" alt="API.jpg" title="">
-<h2 id="Quick-find-eager-approach-i"><a href="#Quick-find-eager-approach-i" class="headerlink" title="Quick-find [eager approach]i"></a>Quick-find [eager approach]i</h2><p><strong>Data structure.</strong></p>
-<ul>
-<li>Integer array id [] of length N.</li>
-<li>Interpretation: p and q are connected if and only if they have same id.</li>
-</ul>
-<img src="/2017/05/15/Union-Find/quick_find1.jpg" alt="quick_find1.jpg" title="">
-<p><strong>Find.</strong> Check if p and q have the same id.</p>
-<p><strong>Union.</strong> To merge components containing p and q, change all entries whose id equals id[p] to id[q]</p>
-<img src="/2017/05/15/Union-Find/quick_find2.jpg" alt="quick_find2.jpg" title="">
-<h2 id="Quick-find-is-too-slow"><a href="#Quick-find-is-too-slow" class="headerlink" title="Quick-find is too slow"></a>Quick-find is too slow</h2><p><strong>Cost model.</strong> Number of array accesses (for read or write).</p>
-<table>
-<thead>
-<tr>
-<th>algorithm</th>
-<th>initialize</th>
-<th>union</th>
-<th>find</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>quick-find</td>
-<td>N</td>
-<td>N</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-<p>Union is too expensive. It takes $N^2$ array accesses to process a sequence of N union commands on N objects.</p>
-<h2 id="Quick-union-lazy-approach"><a href="#Quick-union-lazy-approach" class="headerlink" title="Quick-union [lazy approach]"></a>Quick-union [lazy approach]</h2><p><strong>Data structure.</strong></p>
-<ul>
-<li>Integer array id [] of length N.</li>
-<li>Interpretation: id[i] is parent of i.</li>
-<li>Root of i is id[id[id[…id[i]…]]].</li>
-</ul>
-<img src="/2017/05/15/Union-Find/quick_union1.jpg" alt="quick_union1.jpg" title="">
-<p><strong>Find.</strong> Check if p and q have the same root.</p>
-<p><strong>Union.</strong> To merge components containing p and q, set the id of p’s root to the id of q’s root.</p>
-<h2 id="Quick-union-is-also-too-slow"><a href="#Quick-union-is-also-too-slow" class="headerlink" title="Quick-union is also too slow"></a>Quick-union is also too slow</h2><p><strong>Cost model.</strong> Number of array accesses (for read or write,worst case).</p>
-<table>
-<thead>
-<tr>
-<th>algorithm</th>
-<th>initialize</th>
-<th>union</th>
-<th>find</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>quick-union</td>
-<td>N</td>
-<td>N</td>
-<td>N</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Quick-find defect.</strong></p>
-<ul>
-<li>Union too expensive(N array accesses).</li>
-<li>Trees are flat, but too expensive to keep them flat.</li>
-</ul>
-<p><strong>Quick-union defect.</strong></p>
-<ul>
-<li>Trees can get tall.</li>
-<li>Find too expensive(could be N array accesses).</li>
-</ul>
-<h2 id="Improvement-1-weighting"><a href="#Improvement-1-weighting" class="headerlink" title="Improvement 1: weighting"></a>Improvement 1: weighting</h2><p><strong>Weighted quick-union.</strong></p>
-<ul>
-<li>Modify quick-union to avoid tall  trees.</li>
-<li>Keep track of size each tree(number of objects).</li>
-<li>Balance by linking root of smaller tree to root of larger(  reasonable alternatives: union by height or “rank”) tree.</li>
-</ul>
-<h2 id="Weighted-Quick-union-Implementation"><a href="#Weighted-Quick-union-Implementation" class="headerlink" title="Weighted Quick-union Implementation"></a>Weighted Quick-union Implementation</h2><p><strong>Data structure.</strong> Same as quick-union, but maintain extra array sz[i] to count number of objects in the tree rooted at i.</p>
-<p><strong>Find.</strong> Identical to quick-union.</p>
-<p><strong>Union.</strong> Modify quick-union to:</p>
-<ul>
-<li>Link root of smaller tree to root of larger tree.</li>
-<li>Update the sz[] array.</li>
-</ul>
-<h2 id="Weighted-quick-union-analysis"><a href="#Weighted-quick-union-analysis" class="headerlink" title="Weighted quick-union analysis"></a>Weighted quick-union analysis</h2><p><strong>Running time.</strong></p>
-<ul>
-<li>Find: takes time proportional to depth of p and q.</li>
-<li>Union: takes constant time, given roots.</li>
-</ul>
-<p><strong>Proposition.</strong> Depth of any node x is at most lgN.</p>
-<p><strong>Prove:</strong> The depth of node x increases by 1 when tree <em>T1</em> containing x is merged into another tree <em>T2</em>. The size of the tree containing x at least doubles since <em>T2</em>&gt;=<em>T1</em>. Due to the fact that size of node x is N at most, Size of tree containing x can double  at most lgN times.(合并时候深度增加1，个数至少增加一倍，一棵树至多有N个节点，所以树的高度至多为lgN)</p>
-<p><strong>Cost model.</strong> Number of array accesses (for read or write,worst case).</p>
-<table>
-<thead>
-<tr>
-<th>algorithm</th>
-<th>initialize</th>
-<th>union</th>
-<th>find</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>weighted QU</td>
-<td>N</td>
-<td>lgN</td>
-<td>lgN</td>
-</tr>
-</tbody>
-</table>
-<h2 id="Improvement-2-path-compression"><a href="#Improvement-2-path-compression" class="headerlink" title="Improvement 2: path compression"></a>Improvement 2: path compression</h2><p><strong>Quick union with path compression.</strong> Just after computing the root of p, set the id of each examined node to point to that root.</p>
-<h2 id="Path-compression-Implementation"><a href="#Path-compression-Implementation" class="headerlink" title="Path compression Implementation"></a>Path compression Implementation</h2><p><strong>Two-pass implementation:</strong> add second loop() to root() to set the id[] of each examined node to the root.</p>
-<p><strong>Simpler one-pass variant:</strong> Make every other node in path point to its grandparent(thereby halving path length).</p>
-<h2 id="Weighted-quick-union-with-path-compression-amortized-analysis-摊还分析"><a href="#Weighted-quick-union-with-path-compression-amortized-analysis-摊还分析" class="headerlink" title="Weighted quick-union with path compression: amortized analysis(摊还分析)"></a>Weighted quick-union with path compression: amortized analysis(摊还分析)</h2><p><strong>Proposition.</strong> Stating from an empty data structure, any sequence of <em>M</em> union-find ops on <em>N</em> objects makes&lt;= c(<em>N</em>+<em>M</em>lg<em> </em>N<em>) array accesses.(lg</em> <em>N</em>为<a href="https://en.wikipedia.org/wiki/Iterated_logarithm" target="_blank" rel="external">迭代对数函数</a>)</p>
-<p>In practice, WQUPC is linear.</p>
-<h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><img src="/2017/05/15/Union-Find/Summary.jpg" alt="Summary.jpg" title="">
-<h2 id="Union-find-applications"><a href="#Union-find-applications" class="headerlink" title="Union-find applications"></a>Union-find applications</h2><ul>
-<li>Percolation(蒙罗卡特模拟，渗滤).</li>
-<li>Games(<a href="https://en.wikipedia.org/wiki/Go_(game" target="_blank" rel="external">Go</a>),<a href="https://en.wikipedia.org/wiki/Hex_(board_game" target="_blank" rel="external">Hex</a>)).</li>
-<li>Dynamic connectivity.</li>
-<li><a href="https://en.wikipedia.org/wiki/Tarjan%27s_off-line_lowest_common_ancestors_algorithm" target="_blank" rel="external">Least common ancestor(最小公共祖先).</a></li>
-<li><a href="https://zh.wikipedia.org/wiki/%E6%9C%89%E9%99%90%E7%8A%B6%E6%80%81%E6%9C%BA" target="_blank" rel="external">Equivalence of finite state automata(有限自动机).</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Hoshen%E2%80%93Kopelman_algorithm" target="_blank" rel="external">Hoshen-Kopelman algorithm in physics.</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system" target="_blank" rel="external">Hinley-Milner polymorphic type inference.</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Kruskal%27s_algorithm" target="_blank" rel="external">Kruskal’s minimum spanning tree algorithm(最小生成树).</a></li>
-<li><a href="http://earth.uni-muenster.de/~joergs/doc/f90/unix-um/dfum_020.html" target="_blank" rel="external">Compiling equivalence statements in Fortran.</a></li>
-<li>Morphological attribute openings and closings.</li>
-<li>Matlab’s <code>bwlabel()</code> function in image processing.</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </article>
 
 
-    
-      
 
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://gmshepard.github.io/2017/03/02/数据库索引简介/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="gmshepard">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="gmshepard's tech blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/03/02/数据库索引简介/" itemprop="url">数据库索引简介</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-02T19:25:35+08:00">
-                2017-03-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据库/" itemprop="url" rel="index">
-                    <span itemprop="name">数据库</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>数据库中往往存储了海量的数据。面对如此庞大的数据集，如果不为它们建立索引，数据库系统只能使用逐数据扫描的方式去寻找目标记录，这种方式极其低效耗时，显然这对于用户来说是不可接受的。索引通过特殊的数据结构维护了数据在磁盘中的位置信息，通过增加数据库的写代价大大提升了数据库的读效率，已经成为数据库系统中不可或缺的组成部分。索引功能一般由数据库系统的存储引擎提供。</p>
-<h2 id="一维索引"><a href="#一维索引" class="headerlink" title="一维索引"></a>一维索引</h2><h3 id="哈希索引"><a href="#哈希索引" class="headerlink" title="哈希索引"></a>哈希索引</h3><p>哈希索引通过在内存中维护一个哈希表来索引磁盘中的数据项，它只支持 Key-Value 存储系统，支持增、删、改、查操作。由于其数据结构的特点，它具有非常好的随机读取效率，但不支持顺序扫描。下面我们以 Bitcask 数据库为例介绍哈希索引。<br>Bitcask 是一个基于哈希表结构的存储系统，它仅支持追加操作，所有的写均是追加而不去修改老数据（删除操作也不会真正删除旧数据，而是将 Value 值设为一个特殊的删除标志）。当一个数据文件写满后，会产生一个新文件继续写，而老的文件只读不写。任意时刻只能有<br>一个文件可写。</p>
-<p>为了索引磁盘中这样一条记录，系统为 Key 建立哈希表，并通过 Key 快速定位到 Value的位置。哈希表结构中的每一项包含了用于定位数据的信息：文件编号（file_id）、Value 在文件中的位置（value_pos）和 Value 长度（value_len）。即通过读编号为 file_id 的文件中从file_pos 开始的 value_len 个字节（如图所示）。当写入一条记录时，先将 Key-Value 记录添加到数据文件结尾，再更新内存中的 hash 表。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-1.jpg" alt="">当 Bitcask 中的记录删除或更新后，原来的垃圾数据会被后台的 Compaction 线程定期删除，生成新的文件，此时也需要修改哈希表。如果出现断电重启等情况，由于哈希表存储在内存中，为了重建哈希表不得不重新扫描数据，这一过程非常耗时，Bitcask 通过在磁盘上建立索引文件存储哈希信息。</p>
-<h3 id="B-树索引"><a href="#B-树索引" class="headerlink" title="B+树索引"></a>B+树索引</h3><h4 id="B树的出现原因"><a href="#B树的出现原因" class="headerlink" title="B树的出现原因"></a><strong>B树</strong>的出现原因</h4><p>（这一部分是摘录的，写的十分精彩）二叉平衡树、红黑树等数据结构可以用来实现索引，但是文件系统及数据库系统普遍采用B-/+树作为索引结构，这一节将结合计算机组成原理相关知识讨论B-/+Tree作为索引的理论基础。</p>
-<p>一般来说，索引本身也很大，不可能全部存储在内存中，因此索引往往以索引文件的形式存储的磁盘上。这样的话，索引查找过程中就要产生磁盘I/O消耗，相对于内存存取，I/O存取的消耗要高几个数量级，所以评价一个数据结构作为索引的优劣最重要的指标就是在查找过程中磁盘I/O操作次数的渐进复杂度。换句话说，索引的结构组织要尽量减少查找过程中磁盘I/O的存取次数。下面先介绍内存和磁盘存取原理，然后再结合这些原理分析B-/+Tree作为索引的效率。</p>
-<h5 id="主存存取原理"><a href="#主存存取原理" class="headerlink" title="主存存取原理"></a>主存存取原理</h5><p>目前计算机使用的主存基本都是随机读写存储器（RAM），现代RAM的结构和存取原理比较复杂，这里本文抛却具体差别，抽象出一个十分简单的存取模型来说明RAM的工作原理。</p>
-<p>从抽象角度看，主存是一系列的存储单元组成的矩阵，每个存储单元存储固定大小的数据。每个存储单元有唯一的地址，现代主存的编址规则比较复杂，这里将其简化成一个二维地址：通过一个行地址和一个列地址可以唯一定位到一个存储单元。下图展示了一个4 x 4的主存模型。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-3.png" alt=""></p>
-<p>主存的存取过程如下：</p>
-<p>当系统需要读取主存时，则将地址信号放到地址总线上传给主存，主存读到地址信号后，解析信号并定位到指定存储单元，然后将此存储单元数据放到数据总线上，供其它部件读取。</p>
-<p>写主存的过程类似，系统将要写入单元地址和数据分别放在地址总线和数据总线上，主存读取两个总线的内容，做相应的写操作。</p>
-<p>这里可以看出，主存存取的时间仅与存取次数呈线性关系，因为不存在机械操作，两次存取的数据的“距离”不会对时间有任何影响，例如，先取A0再取A1和先取A0再取D3的时间消耗是一样的。</p>
-<h5 id="磁盘存取原理"><a href="#磁盘存取原理" class="headerlink" title="磁盘存取原理"></a>磁盘存取原理</h5><p>上文说过，索引一般以文件形式存储在磁盘上，索引检索需要磁盘I/O操作。与主存不同，磁盘I/O存在机械运动耗费，因此磁盘I/O的时间消耗是巨大的。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-4.png" alt=""></p>
-<p>一个磁盘由大小相同且同轴的圆形盘片组成，磁盘可以转动（各个磁盘必须同步转动）。在磁盘的一侧有磁头支架，磁头支架固定了一组磁头，每个磁头负责存取一个磁盘的内容。磁头不能转动，但是可以沿磁盘半径方向运动（实际是斜切向运动），每个磁头同一时刻也必须是同轴的，即从正上方向下看，所有磁头任何时候都是重叠的（不过目前已经有多磁头独立技术，可不受此限制）。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-5.png" alt=""></p>
-<p>盘片被划分成一系列同心环，圆心是盘片中心，每个同心环叫做一个磁道，所有半径相同的磁道组成一个柱面。磁道被沿半径线划分成一个个小的段，每个段叫做一个扇区，每个扇区是磁盘的最小存储单元。为了简单起见，我们下面假设磁盘只有一个盘片和一个磁头。</p>
-<p>当需要从磁盘读取数据时，系统会将数据逻辑地址传给磁盘，磁盘的控制电路按照寻址逻辑将逻辑地址翻译成物理地址，即确定要读的数据在哪个磁道，哪个扇区。为了读取这个扇区的数据，需要将磁头放到这个扇区上方，为了实现这一点，磁头需要移动对准相应磁道，这个过程叫做寻道，所耗费时间叫做寻道时间，然后磁盘旋转将目标扇区旋转到磁头下，这个过程耗费的时间叫做旋转时间。</p>
-<h5 id="局部性原理与磁盘预读"><a href="#局部性原理与磁盘预读" class="headerlink" title="局部性原理与磁盘预读"></a>局部性原理与磁盘预读</h5><p>由于存储介质的特性，磁盘本身存取就比主存慢很多，再加上机械运动耗费，磁盘的存取速度往往是主存的几百分分之一，因此为了提高效率，要尽量减少磁盘I/O。为了达到这个目的，磁盘往往不是严格按需读取，而是每次都会预读，即使只需要一个字节，磁盘也会从这个位置开始，顺序向后读取一定长度的数据放入内存。这样做的理论依据是计算机科学中著名的局部性原理：</p>
-<p>当一个数据被用到时，其附近的数据也通常会马上被使用。</p>
-<p>程序运行期间所需要的数据通常比较集中。</p>
-<p>由于磁盘顺序读取的效率很高（不需要寻道时间，只需很少的旋转时间），因此对于具有局部性的程序来说，预读可以提高I/O效率。</p>
-<p>预读的长度一般为页（page）的整倍数。页是计算机管理存储器的逻辑块，硬件及操作系统往往将主存和磁盘存储区分割为连续的大小相等块，每个存储块称为一页（在许多操作系统中，页得大小通常为4k），主存和磁盘以页为单位交换数据。当程序要读取的数据不在主存中时，会触发一个缺页异常，此时系统会向磁盘发出读盘信号，磁盘会找到数据的起始位置并向后连续读取一页或几页载入内存中，然后异常返回，程序继续运行。</p>
-<h5 id="B-Tree索引的性能分析"><a href="#B-Tree索引的性能分析" class="headerlink" title="B-/+Tree索引的性能分析"></a>B-/+Tree索引的性能分析</h5><p>上文说过一般使用磁盘I/O次数评价索引结构的优劣。先从B-Tree分析，根据B-Tree的定义，可知检索一次最多需要访问h个节点。数据库系统的设计者巧妙利用了磁盘预读原理，将一个节点的大小设为等于一个页，这样每个节点只需要一次I/O就可以完全载入。为了达到这个目的，在实际实现B-Tree还需要使用如下技巧：</p>
-<p>每次新建节点时，直接申请一个页的空间，这样就保证一个节点物理上也存储在一个页里，加之计算机存储分配都是按页对齐的，就实现了一个node只需一次I/O。</p>
-<p>B-Tree中一次检索最多需要h-1次I/O（根节点常驻内存），渐进复杂度为O(h)=O(logdN)。一般实际应用中，出度d是非常大的数字，通常超过100，因此h非常小（通常不超过3）。</p>
-<p>综上所述，用B-Tree作为索引结构效率是非常高的。</p>
-<p>而红黑树这种结构，h明显要深的多。由于逻辑上很近的节点（父子）物理上可能很远，无法利用局部性，所以红黑树的I/O渐进复杂度也为O(h)，效率明显比B-Tree差很多。</p>
-<p>上文还说过，B+Tree更适合外存索引，原因和内节点出度d有关。从上面分析可以看到，d越大索引的性能越好，而出度的上限取决于节点内key和data的大小：</p>
-<p>dmax = floor(pagesize / (keysize + datasize + pointsize))   (pagesize – dmax &gt;= pointsize)</p>
-<p>或</p>
-<p>dmax = floor(pagesize / (keysize + datasize + pointsize)) – 1   (pagesize – dmax &lt; pointsize)</p>
-<p>floor表示向下取整。由于B+Tree内节点去掉了data域，因此可以拥有更大的出度，拥有更好的性能。</p>
-<h4 id="B树的定义"><a href="#B树的定义" class="headerlink" title="B树的定义"></a><strong>B树</strong>的定义</h4><p>B 树又叫平衡多路查找树。<strong>一棵m阶的B 树的特性如下：</strong></p>
-<ol>
-<li>树中每个结点最多含有m个孩子（m&gt;=2）；</li>
-<li>除根结点和叶子结点外，其它每个结点至少有[ceil(m / 2)]个孩子（其中ceil(x)是一个取上限的函数）；</li>
-<li>根结点至少有2个孩子（除非B树只包含一个结点：根结点）；</li>
-<li>所有叶子结点都出现在同一层，叶子结点不包含任何关键字信息(可以看做是外部结点或查询失败的结点，指向这些结点的指针都为null)；（注：叶子节点只是没有孩子和指向孩子的指针，这些节点也存在，也有元素。类似红黑树中，每一个NULL指针即当做叶子结点，只是没画出来而已）。</li>
-<li>每个非终端结点中包含有n个关键字信息： (n，P0，K1，P1，K2，P2，……，Kn，Pn)。其中：<br>a) Ki (i=1…n)为关键字，且关键字按顺序升序排序K(i-1)&lt; Ki。<br>b) Pi为指向子树根的结点，且指针P(i-1)指向子树种所有结点的关键字均小于Ki，但都大于K(i-1)。<br>c) 关键字的个数n必须满足： [ceil(m / 2)-1]&lt;= n &lt;= m-1。比如有j个孩子的非叶结点恰好有j-1个关键码。</li>
-</ol>
-<p><img src="/2017/03/02/数据库索引简介/1-2.jpg" alt=""></p>
-<p>B树中的每个结点根据实际情况可以包含大量的关键字信息和分支。新建节点时，直接申请页大小的空间（磁盘是按 block 分的，一般为 512 Byte。磁盘 IO 一次读取若干个 block，我们称为一页，具体大小和操作系统有关，一般为 4 k，8 k或 16 k），计算机内存分配是按页对齐的，这样就实现了一个节点只需要一次 IO。这样树的深度降低了，这就意味着查找一个元素只要很少结点从外存磁盘中读入内存，很快访问到要查找的数据。</p>
-<p>根据上述的B树定义，与二叉平衡树相比，B树的高度更低，每个节点包含更多的数据，假设B树的 m 值设为 8，同样对于 1G 记录，每次查找涉及的磁盘访问次数将减至4-5 次。</p>
-<h4 id="B树的插入、删除操作"><a href="#B树的插入、删除操作" class="headerlink" title="B树的插入、删除操作"></a><strong>B树</strong>的插入、删除操作</h4><p>插入操作</p>
-<p>针对一棵高度为h的m阶B树，插入一个元素时，首先在B树中是否存在，如果不存在，一般在叶子结点中插入该新的元素，此时分3种情况：</p>
-<ul>
-<li>如果叶子结点空间足够，即该结点的关键字数小于m-1，则直接插入在叶子结点的左边或右边；</li>
-<li>如果空间满了以致没有足够的空间去添加新的元素，即该结点的关键字数已经有了m个，则需要将该<strong>结点</strong>进行“分裂”，将一半数量的关键字元素分裂到新的其相邻右结点中，中间关键字元素上移到父结点中，而且当结点中关键元素向右移动了，相关的指针也需要向右移。</li>
-<li>此外，如果在上述中间关键字上移到父结点的过程中，导致根结点空间满了，那么根结点也要进行分裂操作，这样原来的根结点中的中间关键字元素向上移动到新的根结点中，因此导致树的高度增加一层。</li>
-</ul>
-<p>删除操作</p>
-<p>下面介绍删除操作，删除操作相对于插入操作要考虑的情况多点。  </p>
-<ul>
-<li>首先查找B树中需删除的元素,如果该元素在B树中存在，则将该元素在其结点中进行删除，如果删除该元素后，首先判断该元素是否有左右孩子结点</li>
-<li>如果有，则上移孩子结点中的某相近元素(“左孩子最右边的节点”或“右孩子最左边的节点”)到父节点中，然后是移动之后的情况；</li>
-<li>如果没有，直接删除后，移动之后的情况。</li>
-</ul>
-<p>删除元素，移动相应元素之后，如果某结点中元素数目（即关键字数）小于<strong>ceil(m/2)-1</strong>，则需要看其某相邻兄弟结点是否丰满（结点中元素个数大于ceil(m/2)-1）</p>
-<ul>
-<li>如果丰满，则向父节点借一个元素来满足条件；</li>
-<li>如果其相邻兄弟都刚脱贫，即借了之后其结点数目小于ceil(m/2)-1，则该结点与其相邻的某一兄弟结点进行“合并”成一个结点，以此来满足条件。</li>
-</ul>
-<h4 id="B树的查找操作"><a href="#B树的查找操作" class="headerlink" title="B树的查找操作"></a><strong>B树</strong>的查找操作</h4><p>B树查找主要运用了二分查找技术。首先从根节点进行二分查找，如果找到则返回对应节点的data，否则对相应区间的指针指向的节点递归进行查找，直到找到节点或找到null指针，前者查找成功，后者查找失败。</p>
-<h4 id="B-树的改进"><a href="#B-树的改进" class="headerlink" title="B+树的改进"></a><strong>B+树</strong>的改进</h4><p>相较于B树，B+树的数据全部存储在叶子节点。且叶子节点之间用双向链表连接起来便于扫描，有利于范围查询。其所有非叶子节点包含的仅是子树的最小（或最大）值。很多主流的存储引擎都是选择B+树作为存储的数据结构的。原因在于B+树非叶子节点不含数据，每个非叶节点包含的内容更多，具有出度多、深度低的特点，更有效地保证了性能。而且 B+树的数据全部位于叶子节点，便于遍历。</p>
-<p>以 MySQL 的 InnoDB 为例，它按照页面（page）来存储数据，每个页面对应 B+树的一个一个节点。如下图所示，叶子节点保存每行的完整数据，非叶节点保存索引信息。数据在每个节点中有序存储。收到查询命令时需要从从根节点开始二分查找直到叶子节点。一般情况下 B+树的根节点是常驻内存的。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-6.jpg" alt=""></p>
-<h3 id="LSM树索引"><a href="#LSM树索引" class="headerlink" title="LSM树索引"></a>LSM树索引</h3><p>LSM-tree（Log Structure Merge Tree）是由两个或两个以上存储数据的结构组成的。最简单的 LSM-tree 由两个部件构成，如下图所示。一个部件常驻内存，称为 C0，可以为任何方便键值查找的数据结构（如哈希表、跳转表、AVL 树等）。另一个部件常驻硬盘之中，称为<br>C1，用来记录持久化插入的数据。C1 中经常被访问的结点也将会被缓存在内存中。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-7.jpg" alt=""></p>
-<p>目前 Hbase, Google LevelDB, Facebook RocksDB 等均采用这种数据结构作为索引。LSM-tree 的主要思想就是将对数据的修改增量的保存在内存中，达到一定的大小后将这些修改批量写入磁盘，但在读的时候可能需要合并磁盘中合内存中的修改数据。LSM-tree 的优势在于<br>它的写操作是批量顺序写，效率很高。但读操作可能不得不访问较多的文件，因为可能磁盘上的每一层都包含目标记录。本节以 RocksDB 为例，具体介绍一下 LSM-Tree 的思想。</p>
-<p>RocksDB 是一个嵌入式的 Key-Value 数据库，其结构体系与 Hbase 有很多相似之处。RocksDB 主要由三个部件组成：memtable、sstfile 和 logfile，其中 memtable 位于内存中，sstfile 与 logfile 持久化在硬盘。新的数据插入时，首先会按照操作顺序写 logfile，logfile 会顺序写入磁盘。接着，数据将被插入 memtable（通常是内存中的一个跳转表），当 memtable被写满后会形成一个 sstfile 写入磁盘，此时相应的 logfile 就可以被删除了。由于 RocksDB 批量顺序写而非随机写的特性，其写效率非常高的优点。每个 sstfile 中的数据都是排序的，以<br>便快速查找。RocksDB 的基于 LSM-Tree 的组织结构如下所示：</p>
-<p><img src="/2017/03/02/数据库索引简介/1-8.jpg" alt=""></p>
-<p>RocksDB 的 LSM-Tree 结构是简化版的，它在磁盘中的组织并没有使用 B+-Tree 等复杂的数据结构，而是让每层都按序排列，并维护每个文件的最大值、最小值信息，这样每层都可以进行快速二分查找，效率并不差而且维护起来更加简单，此外 RocksDB 还引入 Bloom Filter进一步提高查询效率。RocksDB 的数据存储方式具有更高的压缩比，首先前缀相近的数据存放在一起可以利用前缀压缩的手段提高压缩比，而且这种顺序存放数据的方式本来就比按照B+-Tree 按页对齐的方式具有更高的空间利用率。根据相关实验显示，相同的数据使用RocksDB 存储比使用 InnoDB 存储节省了近 2/3 的磁盘空间。下图是 RocksDB LSM 结构。随着每层的文件数目不断增多，会不断地向下做 compaction，以保持层之间数据量的比例关系。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-9.jpg" alt=""></p>
-<h2 id="空间数据索引"><a href="#空间数据索引" class="headerlink" title="空间数据索引"></a>空间数据索引</h2><p>空间数据分为两种：栅格数据和矢量数据。栅格数据本质上就是影像，通俗的理解就是分辨率特别高的照片（可见光、红外、微波等波段），这些影像可以通过遥感卫星、航空航天摄影测量，甚至无人机上加个单反（或其它传感器）都可以拍摄。栅格数据一般是以文件<br>的形式保存，不在我们的讨论范围，我来重点介绍一下矢量数据。矢量数据说白了就是坐标信息，二维矢量数据基本分为点、线、面以及它们的组合，几乎所有的空间地物都能被抽象为这几种类型之一，如公路可以抽象为线，建筑物可以抽象为面。后文提到的空间数据，均<br>默认为矢量数据。以一个简单的线和面为例，它们计算机上是以坐标序列存储的：</p>
-<p><img src="/2017/03/02/数据库索引简介/1-10.jpg" alt=""></p>
-<p>一般数据库只为一维数据提供索引，但也有好几种数据库产品支持二维甚至更高维空间数据的存储与索引，我们也称之为空间数据库，其中功能最强大的莫过于 Oracle，其能够为空间数据提供 R-tree 和 Quad-tree（四叉树）索引，并支持大量的空间查询与分析。空间索引建立的目的是加快空间查询，空间查询主要包括范围查询、邻近查询等。范围查询是给定空间范围（矩形、圆形或任意多边形），查询落在此范围的地物，如：查询北京范围（多边形）内一共有多少条公路。邻近查询则给定一个点，查询其附近 n 米内的地物，如我们用大众点评搜索附近 1km 内的美食店。</p>
-<h3 id="R树索引"><a href="#R树索引" class="headerlink" title="R树索引"></a>R树索引</h3><p>首先介绍最小外包矩形（MBR，Minimum Bounding Rectangle）的概念，是包围地物的，且平行于 x,y 轴的最小外接矩形，一个例子如下所示。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-11.jpg" alt=""></p>
-<p>R树索引是一种采用对象界定技术的高度平衡树,是B树在高维空间上的自然拓展，同时具有动态性，聚合型与高效性的特点。该索引将空间对象抽象为MBR，而空间位置相邻的MBR将递归合并成一个更高一级的包围盒,最终形成一个分层的树形结构。R树在形式上可以一系列树节点（Node）的集合：</p>
-<p><img src="/2017/03/02/数据库索引简介/1-12.png" alt=""></p>
-<p>对于每一个条目，有</p>
-<p><img src="/2017/03/02/数据库索引简介/1-13.png" alt=""></p>
-<p>其中，<em>id</em>为节点的唯一标识符，<em>Level</em>为该节点位于的层数，<em>Count</em>为该节点拥有的子节点数量，而<em>Descendants</em>保存了一些互为兄弟节点的子节点引用，即</p>
-<p><img src="/2017/03/02/数据库索引简介/1-14.png" alt=""></p>
-<p>当Level不为0时，MBR与Pointer分别表示该子树对应的空间范围与引用，当Level为0时，Descendant分别保存地理要素的引用与最小包围盒。下图中展示了一个多边形数据集及其对应的R树索引结构。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-15.png" alt=""></p>
-<p>R树空间查询是一个空间对象的两步过滤过程。第一步为查找候选空间数据的过程，成为MBR粗过滤。如图所示，R树查询从根节点开始，逐级向下搜索MBR与搜索范围相交的子节点，并通过节点导航的方式读取子节点数据，并递归执行上述操作，直至访问到叶子节点，MBR与查询范围相交的叶子节点构成了查询结果的候选集。第二部为精过滤，即将候选叶子节点指向的数据与查询范围精细匹配，得到精确的查询结果。由于R树粗过滤中的节点导航次数决定了R树查询的性能，因而使用缓存方法，将R树中较常被访问的上层节点缓存至内存，可有效的提高查询性能。</p>
-<h3 id="四叉树索引"><a href="#四叉树索引" class="headerlink" title="四叉树索引"></a>四叉树索引</h3><p>四叉树空间索引的基本原理是将已知的空间范围划成四个相等的子空间，并把该区域里的相关信息存入到四叉树节点中。将每个或其中几个子空间继续按照一分为四的原则划分下去，这样就形成了一个基于四叉树的空间划分。四叉树可以分为完全四叉树和自适应四叉树。完全四叉树指所有叶子结点有相同高度，即每一个结点均被四分，直到指定高度，如下图所示。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-16.jpg" alt=""></p>
-<p>自适应四叉树则表示有不同高度的从根结点到叶结点的路径，是按地理要素分布来决定是否四分下去，如下图所示。如果节点中的元素个数超出了预设的最大数目，则将节点分裂，将其中的空间要素移动到相应的子节点中去。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-17.jpg" alt=""></p>
-<p>四叉树往往将二维空间划分为一系列大小相等的棋盘状矩形，由于这些矩形分布规则，可以对它们进行编码填充（一种降维方法），其中最有名的四叉树地理空间编码方式便是Geohash。Geohash是一种将二维经纬度转化为一维字符串的编码方式，最早由Gustavo Niemeyer提出。具体原理是沿着经纬度方向交替二分全球表面，无论是沿着经度二分还是纬度二分，都算作一次划分，累计到五次划分后，作为一个层次。根据精度要求一直循环划分下去。利用二进制来表示划分结果:沿着经度二分，左边区域为0，右边区域为1；沿着纬度二分，上面区域为1，下面区域为0。最后将经纬度串交叉组合成二进制串用32进制编码方式（例如Base32）进行编码，就能得到Geohash编码。</p>
-<p>Geohash利用了空间填充曲线的原理。如下图我们将二进制编码的结果填写到空间中，当将空间划分为四块时候，编码的顺序分别是左下角00，左上角01，右下脚10，右上角11，也就是类似于Z的曲线，当我们递归的将各个块分解成更小的子块时，编码的顺序是自相似的（分形），每一个子快也形成Z曲线，这种类型的曲线被称为Peano空间填充曲线。</p>
-<p>这种类型的空间填充曲线的优点是将二维空间转换成一维曲线（事实上是分形维），对大部分而言，编码相似的距离也相近， 但Peano空间填充曲线最大的缺点就是突变性，有些编码相邻但距离却相差很远，比如0111与1000，编码是相邻的，但距离相差很大。</p>
-<p><img src="/2017/03/02/数据库索引简介/1-18.jpg" alt=""></p>
-<p>Geohash 在兴趣点搜索等方面运用较为广泛，目前 MongoDB 的空间索引 2dsphere 便是基于 Geohash 实现的。Redis的Geo功能也是如此。</p>
-<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://github.com/julycoding/The-Art-Of-Programming-By-July/blob/master/ebook/zh/03.02.md" target="_blank" rel="external">数据结构B树</a></p>
-<p><a href="http://blog.jobbole.com/24006/" target="_blank" rel="external">MySQL索引背后的数据结构及算法原理</a></p>
-<p><a href="http://blog.jobbole.com/80633/" target="_blank" rel="external">GeoHash核心原理解析</a></p>
-
-          
-        
+    <div class="post-spread">
       
     </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-  </section>
-
-  
+  </div>
 
 
           </div>
@@ -1375,6 +677,10 @@
 
 
           
+  <div class="comments" id="comments">
+    
+  </div>
+
 
         </div>
         
@@ -1395,8 +701,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/avatar.gif"
@@ -1458,6 +773,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于Redis空间数据组织"><span class="nav-number">2.</span> <span class="nav-text">基于Redis空间数据组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis的GIS扩展"><span class="nav-number">3.</span> <span class="nav-text">Redis的GIS扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spatial对象结构"><span class="nav-number">3.1.</span> <span class="nav-text">Spatial对象结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移植新命令"><span class="nav-number">3.2.</span> <span class="nav-text">移植新命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加新命令流程"><span class="nav-number">3.2.1.</span> <span class="nav-text">添加新命令流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GSEARCH命令实现解析"><span class="nav-number">3.2.2.</span> <span class="nav-text">GSEARCH命令实现解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH命令用法"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">GSEARCH命令用法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH原理"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GSEARCH原理</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDB和AOF支持"><span class="nav-number">3.3.</span> <span class="nav-text">RDB和AOF支持</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RDB持久化"><span class="nav-number">3.3.1.</span> <span class="nav-text">RDB持久化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AOF持久化"><span class="nav-number">3.3.2.</span> <span class="nav-text">AOF持久化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#未来改进想法"><span class="nav-number">4.</span> <span class="nav-text">未来改进想法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -1578,10 +909,10 @@
 
 
   
-    <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
 <script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
 
-  
+
 
   
 

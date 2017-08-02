@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="algorithm," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="Scientific method applied to analysis of algorithmsA framework for perdicting performance and comparing algorithms.
+
+Observe some feature of the natural world.
+
+Hypothesize a model that is consistent">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Anlysis of Algorithm">
+<meta property="og:url" content="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/index.html">
+<meta property="og:site_name" content="gmshepard's tech blog">
+<meta property="og:description" content="Scientific method applied to analysis of algorithmsA framework for perdicting performance and comparing algorithms.
+
+Observe some feature of the natural world.
+
+Hypothesize a model that is consistent">
+<meta property="og:image" content="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/order-of-growth.jpg">
+<meta property="og:image" content="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/commonly-used-notations.jpg">
+<meta property="og:image" content="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/memory-usage.jpg">
+<meta property="og:updated_time" content="2017-08-02T17:05:53.839Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Anlysis of Algorithm">
+<meta name="twitter:description" content="Scientific method applied to analysis of algorithmsA framework for perdicting performance and comparing algorithms.
+
+Observe some feature of the natural world.
+
+Hypothesize a model that is consistent">
+<meta name="twitter:image" content="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/order-of-growth.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/"/>
+
+
+
+
+
+  <title>Anlysis of Algorithm | gmshepard's tech blog</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">gmshepard's tech blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://gmshepard.github.io/2017/05/16/AnlysisofAlgorithm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="gmshepard">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="gmshepard's tech blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Anlysis of Algorithm</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-16T10:25:35+08:00">
+                2017-05-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/算法学习/" itemprop="url" rel="index">
+                    <span itemprop="name">算法学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Scientific-method-applied-to-analysis-of-algorithms"><a href="#Scientific-method-applied-to-analysis-of-algorithms" class="headerlink" title="Scientific method applied to analysis of algorithms"></a>Scientific method applied to analysis of algorithms</h2><p>A framework for perdicting performance and comparing algorithms.</p>
+<ul>
+<li><p><strong>Observe</strong> some feature of the natural world.</p>
+</li>
+<li><p><strong>Hypothesize</strong> a model that is consistent with the observations.</p>
+</li>
+<li><p><strong>Predict</strong> events using the hypothesis.</p>
+</li>
+<li><p><strong>Verify</strong> the predictions by making further observations.</p>
+</li>
+<li><p><strong>Validate</strong> by repeating until the hypothesis and observations agree.</p>
+</li>
+</ul>
+<h2 id="Common-order-of-growth-classifications"><a href="#Common-order-of-growth-classifications" class="headerlink" title="Common order-of-growth classifications"></a>Common order-of-growth classifications</h2><p><img src="/2017/05/16/AnlysisofAlgorithm/order-of-growth.jpg" alt=""></p>
+<h2 id="Theory-of-algorithms"><a href="#Theory-of-algorithms" class="headerlink" title="Theory of algorithms"></a>Theory of algorithms</h2><h3 id="Types-of-analyses"><a href="#Types-of-analyses" class="headerlink" title="Types of analyses"></a>Types of analyses</h3><p><strong>Best case.</strong> Lower bound on cost.</p>
+<ul>
+<li>Determined by “easiest” input.</li>
+<li>Provides a goal for all inputs.</li>
+</ul>
+<p><strong>Worst case.</strong> Upper bound on cost.</p>
+<ul>
+<li>Determined by “most difficult” input.</li>
+<li>Provides a guarantee for all inputs.</li>
+</ul>
+<p><strong>Average case.</strong> Expected cost for random input.</p>
+<ul>
+<li>Need a model for “random” input.</li>
+<li>Provides a way to predict performance.</li>
+</ul>
+<h3 id="Commonly-used-notations-in-the-theory-of-algorithms"><a href="#Commonly-used-notations-in-the-theory-of-algorithms" class="headerlink" title="Commonly-used notations in the theory of algorithms"></a>Commonly-used notations in the theory of algorithms</h3><p><img src="/2017/05/16/AnlysisofAlgorithm/commonly-used-notations.jpg" alt=""></p>
+<h3 id="Theory-of-algorithms-example-of-1-Sum"><a href="#Theory-of-algorithms-example-of-1-Sum" class="headerlink" title="Theory of algorithms: example of 1-Sum"></a>Theory of algorithms: example of 1-Sum</h3><p><strong>Goals.</strong></p>
+<ul>
+<li>Establish “difficulty” of a problem and develop “optimal” algorithms.</li>
+<li>Ex.1-Sum=”Is there a 0 in the array”</li>
+</ul>
+<p><strong>Upper bound.</strong></p>
+<ul>
+<li>Ex. Brute-force algorithm for 1-Sum: Look at every array entry.</li>
+<li>Running time of the optimal algorithm for 1-Sum is O(N)</li>
+</ul>
+<p><strong>Lower bound.</strong></p>
+<ul>
+<li>Ex. Have to examine all N entries (any unexamined one might be 0).</li>
+<li>Running time of the optimal algorithm for 1-SUM is Ω(N).</li>
+</ul>
+<p><strong>Optimal algorithm.</strong></p>
+<ul>
+<li>Lower bound equals upper bound (to within a constant factor).</li>
+<li>Ex. Brute-force algorithm for 1-SUM is optimal: its running time is Θ(N ).</li>
+</ul>
+<h3 id="Theory-of-algorithms-example-of-3-Sum"><a href="#Theory-of-algorithms-example-of-3-Sum" class="headerlink" title="Theory of algorithms: example of 3-Sum"></a>Theory of algorithms: example of 3-Sum</h3><p><strong>Goals.</strong></p>
+<ul>
+<li>Establish “difficulty” of a problem and develop “optimal” algorithms.</li>
+<li>Ex.3-Sum</li>
+</ul>
+<p><strong>Upper bound.</strong></p>
+<ul>
+<li>Ex. Improved algorithm for 3-Sum.</li>
+<li>Running time of the optimal algorithm for 3-Sum is O(N^2logN )</li>
+</ul>
+<p><strong>Lower bound.</strong></p>
+<ul>
+<li>Ex. Have to examine all N entries for 3-Sum.</li>
+<li>Running time of the optimal algorithm for 3-SUM is Ω(N).</li>
+</ul>
+<h2 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h2><h3 id="Basics"><a href="#Basics" class="headerlink" title="Basics"></a>Basics</h3><ul>
+<li><strong>Bit.</strong> 0 or 1.</li>
+<li><strong>Byte.</strong> 8 bits.</li>
+<li><strong>Megabyte(MB).</strong> 1 million or 2^20 bytes.</li>
+<li><strong>Gigabyte(GB).</strong> 1 billion or 2^30 bytes.</li>
+</ul>
+<h3 id="Typical-memory-usage-for-primitive-types-and-arrays"><a href="#Typical-memory-usage-for-primitive-types-and-arrays" class="headerlink" title="Typical memory usage for primitive types and arrays"></a>Typical memory usage for primitive types and arrays</h3><p><img src="/2017/05/16/AnlysisofAlgorithm/memory-usage.jpg" alt=""></p>
+<h3 id="Typical-memory-usage-for-objects-in-Java"><a href="#Typical-memory-usage-for-objects-in-Java" class="headerlink" title="Typical memory usage for objects in Java"></a>Typical memory usage for objects in Java</h3><ul>
+<li><strong>Object overhead</strong> 16 bytes.</li>
+<li><strong>Reference</strong> 8 bytes.</li>
+<li><strong>Padding</strong> Each object uses a multiple of 8 bytes.</li>
+</ul>
+<h3 id="Typical-memory-usage-summary"><a href="#Typical-memory-usage-summary" class="headerlink" title="Typical memory usage summary"></a>Typical memory usage summary</h3><p><strong>Total memroy usage for a data type value:</strong></p>
+<ul>
+<li>Primitive type: 4 bytes for int, 8 bytes for double, …</li>
+<li>Object reference: 8 bytes.</li>
+<li>Array: 24 bytes + memory for each array entry.</li>
+<li>Object: 16 bytes + memory for each instance variable + 8 bytes if inner class (for pointer to enclosing class).</li>
+<li>Padding: round up to multiple of 8 bytes.</li>
+</ul>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/algorithm/" rel="tag"># algorithm</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/15/Union-Find/" rel="next" title="Union-Find学习笔记">
+                <i class="fa fa-chevron-left"></i> Union-Find学习笔记
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/06/15/Redis空间引擎设计/" rel="prev" title="Redis空间引擎设计">
+                Redis空间引擎设计 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="gmshepard" />
+          <p class="site-author-name" itemprop="name">gmshepard</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives/">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">11</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Scientific-method-applied-to-analysis-of-algorithms"><span class="nav-number">1.</span> <span class="nav-text">Scientific method applied to analysis of algorithms</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Common-order-of-growth-classifications"><span class="nav-number">2.</span> <span class="nav-text">Common order-of-growth classifications</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Theory-of-algorithms"><span class="nav-number">3.</span> <span class="nav-text">Theory of algorithms</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Types-of-analyses"><span class="nav-number">3.1.</span> <span class="nav-text">Types of analyses</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Commonly-used-notations-in-the-theory-of-algorithms"><span class="nav-number">3.2.</span> <span class="nav-text">Commonly-used notations in the theory of algorithms</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Theory-of-algorithms-example-of-1-Sum"><span class="nav-number">3.3.</span> <span class="nav-text">Theory of algorithms: example of 1-Sum</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Theory-of-algorithms-example-of-3-Sum"><span class="nav-number">3.4.</span> <span class="nav-text">Theory of algorithms: example of 3-Sum</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Memory"><span class="nav-number">4.</span> <span class="nav-text">Memory</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Basics"><span class="nav-number">4.1.</span> <span class="nav-text">Basics</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Typical-memory-usage-for-primitive-types-and-arrays"><span class="nav-number">4.2.</span> <span class="nav-text">Typical memory usage for primitive types and arrays</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Typical-memory-usage-for-objects-in-Java"><span class="nav-number">4.3.</span> <span class="nav-text">Typical memory usage for objects in Java</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Typical-memory-usage-summary"><span class="nav-number">4.4.</span> <span class="nav-text">Typical memory usage summary</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">gmshepard</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
