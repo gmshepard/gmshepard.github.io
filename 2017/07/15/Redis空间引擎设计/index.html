@@ -5,7 +5,7 @@
   
 
 
-<html class="theme-next pisces use-motion" lang="zh-Hans">
+<html class="theme-next mist use-motion" lang="zh-Hans">
 <head>
   <meta charset="UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -84,7 +84,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="-redis -gis," />
+  <meta name="keywords" content="redis,gis," />
 
 
 
@@ -100,13 +100,25 @@
 
 
 
+<meta name="description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Redis空间引擎设计">
 <meta property="og:url" content="http://yoursite.com/2017/07/15/Redis空间引擎设计/index.html">
 <meta property="og:site_name" content="gmshepard's tech blog">
-<meta property="og:updated_time" content="2017-07-28T07:52:04.766Z">
+<meta property="og:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta property="og:image" content="http://yoursite.com/Redis空间引擎设计/1-1.jpg">
+<meta property="og:image" content="http://yoursite.com/Redis空间引擎设计/1-2.jpg">
+<meta property="og:updated_time" content="2017-08-02T08:19:33.194Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis空间引擎设计">
+<meta name="twitter:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
+
+GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta name="twitter:image" content="http://yoursite.com/Redis空间引擎设计/1-1.jpg">
 
 
 
@@ -114,7 +126,7 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Pisces',
+    scheme: 'Mist',
     sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false,"onmobile":false},
     fancybox: true,
     motion: true,
@@ -355,7 +367,241 @@
       
 
       
-        
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。</p>
+<blockquote>
+<p>GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区域，只要矩形区域足够小，达到所需精度即可。</p>
+</blockquote>
+<p>Redis内部使用有序集合来保存key，每一个member的score大小为Geohash值。这种使用Geohash作为地理要素索引方案存在四个缺点：</p>
+<ol>
+<li>由于Geohash编码方式，靠近方块边界两侧的点虽然空间距离相隔较近，但编码却完全不同。实际搜索时候不仅要用搜索点的Geohash编码，也要利用环绕搜索点周围八个区域的Geohash值。</li>
+<li>Geohash索引能索引基于经纬度的球面坐标，但对平面坐标却无能为力。并且对于小范围的局部搜索，依旧使用耗时的球面计算，性能较低。</li>
+<li>Redis中Geohash索引方案只能支持点坐标，而无法索引线、面地理数据。</li>
+<li>不支持常见的<code>INTERSECT|WITHIN</code>搜索。</li>
+</ol>
+<p>因此，为了改进Redis存储组织查询空间数据能力，从两方面入手，第一，利用Redis c++ driver，从逻辑上自上而下设计分层数据模型，组织成可调用API形式。第二，针对Redis源码进行了改进，使其支持R树索引。我主要负责第二部分，对Redis源码进行改进。</p>
+<h2 id="基于Redis空间数据组织"><a href="#基于Redis空间数据组织" class="headerlink" title="基于Redis空间数据组织"></a>基于Redis空间数据组织</h2><p>空间数据库一般分为三个层次：空间数据库(SpatialDatabase)、要素集(FeatureClass)、要素(Feature)。空间数据库、要素集由相应的元数据描述，要素包含几何信息和属性信息。空间数据分层示意图如下图所示：</p>
+<p><img src="/Redis空间引擎设计/1-1.jpg" alt="空间数据组织分层设计示意图"></p>
+<p>这些层次的信息可以利用Redis内置结构例如set，hash实现。要素的属性信息（例如线的长度）索引还可以<a href="https://redis.io/topics/indexes" target="_blank" rel="external">Secondary indexing with Redis</a>这篇文章中提到方法来实现。但是要素几何信息索引就很棘手了，有一种通过Sorted set来建立要素空间范围索引，根据每个要素的MBR(最小包围矩形)的四个坐标数据，分别对四个坐标建立四个关联的Sorted set结构,每个Sorted set的score为要素集所有要素MBR的四个坐标中对应的一个，member为要素ID。以一个简单的例子进行说明。</p>
+<p><img src="/Redis空间引擎设计/1-2.jpg" alt=""></p>
+<p>如上图，我们建立四个key分别为C:MinX,C:MinY,C:MaxX,C:MaxY的四个Sorted set。我们先根据要素ID集合遍历要素集的所有要素，以每个要素对应的MBR的某一坐标为score，要素ID为对应的集合成员，向Sorted Set中添加数据。在进行MBR查询时，分别以待查MBR的四个坐标（假设为minx=20,miny=20,maxx=40,maxy=40）为条件在四个Sorted set中进行包含查询，查询在被待查MBR包含的所有要素。对于C:MinX，使用<code>zrangebyscore C:MinX 20 40</code>对于C:MinY, <code>zrangebyscore C:MinY 20 40</code>对于C:MaxX，使用<code>zrangebyscore C:MaxX 20 40</code>对于C:MaxY, <code>zrangebyscore C:MaxY 20 40</code>。然后将四个查询的结果进行求交，最终得到查询的结果要素的ID为2和3。</p>
+<p>这种方法实现起来复杂，维护麻烦，查询效率也不高。所以想要对Redis源码进行改进，原生支持存储点、线、面等<a href="http://www.opengeospatial.org/standards/sfa" target="_blank" rel="external">OGC标准</a>支持的空间要素，并有R树索引，能够高效进行<code>WITHIN|INTERSECT</code>操作。</p>
+<h2 id="Redis的GIS扩展"><a href="#Redis的GIS扩展" class="headerlink" title="Redis的GIS扩展"></a>Redis的GIS扩展</h2><p>Redis中有五种对象：字符串、列表、集合、有序集合、哈希。没有一种原生对象能够满足我们的要求，于是我们设计了一种新的Spatial对象，将标准hash结构和R树索引结合在一起。和数据库其它的对象不同，通过特定以G为前缀的命令来维护Spatial对象。新的命令参考了Redis hash结构设计：<code>GSET</code>, <code>GSETNX</code>, <code>GGET</code>, <code>GMSET</code>, <code>GMGET</code>, <code>GDEL</code>, <code>GLEN</code>, <code>GSTRLEN</code>, <code>GKEYS</code>, <code>GVALS</code>, <code>GGETALL</code>, <code>GEXISTS</code>, <code>GSCAN</code>，<code>GSEARCH</code>。前13个命令含义和hash命令含义一样，后面GSEARCH是新的命令，用于特定的地理搜索操作，也就是<code>WITHIN|INTERSECT</code>。所有空间数据在RDB和内存中都以WKB二进制形式存储。AOF重写利用<code>GMSET</code>来操作二进制数据。</p>
+<h3 id="Spatial对象结构"><a href="#Spatial对象结构" class="headerlink" title="Spatial对象结构"></a>Spatial对象结构</h3><p>Spatial对象是一个robj类型。如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> redisObject &#123;</div><div class="line">    <span class="keyword">unsigned</span> type:<span class="number">4</span>;</div><div class="line">    <span class="keyword">unsigned</span> encoding:<span class="number">4</span>;</div><div class="line">    <span class="keyword">unsigned</span> lru:LRU_BITS; <span class="comment">/* lru time (relative to server.lruclock) */</span></div><div class="line">    <span class="keyword">int</span> refcount;</div><div class="line">    <span class="keyword">void</span> *ptr;</div><div class="line">&#125; robj;</div></pre></td></tr></table></figure>
+<p>type为<code>OBJ_SPATIAL</code>，encoding为<code>OBJ_ENCODING_RAW</code>。它的ptr指针指向是一个叫做spatial的结构体。如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> spatial &#123;</div><div class="line">    robj *h;        <span class="comment">// hash结构，存储空间数据，在RDB中持久化</span></div><div class="line">    rtree *tr;      <span class="comment">// 空间索引R树.</span></div><div class="line">    <span class="keyword">char</span> *idx;     <span class="comment">// R树键的私有ID.</span></div><div class="line">    robj *keyhash; <span class="comment">// hash结构，存储 key -&gt; idx</span></div><div class="line">    robj *idxhash; <span class="comment">// hash结构，存储 idx -&gt; key</span></div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p><code>h</code>为hash对象存储空间数据，<code>h</code>的key为要素集，field为要素ID，value为wkb形式二进制空间数据（默认小端编码）。<code>tr</code>为内存中的R树结构，R树结构不持久化，每次从RDB中还原，重新建立R树。下面三个变量<code>idx</code>，<code>keyhash</code>，<code>idxhash</code>用来辅助确定R树中每一个entry的ID。R树不持久化考虑有两点：</p>
+<ol>
+<li>R树很难用redis内置对象来表达，不好组织持久化的逻辑。</li>
+<li>Redis的数据一般常驻于内存，并不需要经常从持久化存储中还原数据。</li>
+</ol>
+<h3 id="移植新命令"><a href="#移植新命令" class="headerlink" title="移植新命令"></a>移植新命令</h3><p>为了维护新的Spatial对象，我们为Redis添加了十四个新命令。因为Spatial对象中spatial结构体里除了R树结构其它都是hash结构，所以新的命令参考hash指令，将针对hash指令改为针对Spatial对象。除了十三个由hash命令改过来的，还添加了利用R树进行搜索的<code>GSEARCH</code>指令。这一节分为两个部分，第一部分介绍仿hash命令修改Redis源码过程，第二部分着重介绍<code>GSEARCH</code>命令。</p>
+<h4 id="添加新命令流程"><a href="#添加新命令流程" class="headerlink" title="添加新命令流程"></a>添加新命令流程</h4><p>下面以典型三种命令<code>GSET</code>、<code>GGET</code>、<code>GDEL</code>指令为例介绍：</p>
+<p>在Redis中，一个命令的结构如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> redisCommand &#123;</div><div class="line"></div><div class="line">    <span class="comment">// 命令名字</span></div><div class="line">    <span class="keyword">char</span> *name;</div><div class="line"></div><div class="line">    <span class="comment">// 实现函数</span></div><div class="line">    redisCommandProc *proc;</div><div class="line"></div><div class="line">    <span class="comment">// 参数个数，负数含义至少有arity个</span></div><div class="line">    <span class="keyword">int</span> arity;</div><div class="line"></div><div class="line">    <span class="comment">// 字符串表示的 FLAG</span></div><div class="line">    <span class="keyword">char</span> *sflags; <span class="comment">/* Flags as string representation, one char per flag. */</span></div><div class="line"></div><div class="line">    <span class="comment">// 实际 FLAG</span></div><div class="line">    <span class="keyword">int</span> flags;    <span class="comment">/* The actual flags, obtained from the 'sflags' field. */</span></div><div class="line"></div><div class="line">    <span class="comment">/* Use a function to determine keys arguments in a command line.</span></div><div class="line">     * Used for Redis Cluster redirect. */</div><div class="line">    <span class="comment">// 从命令中判断命令的键参数。在 Redis 集群转向时使用。</span></div><div class="line">    redisGetKeysProc *getkeys_proc;</div><div class="line"></div><div class="line">    <span class="comment">/* What keys should be loaded in background when calling this command? */</span></div><div class="line">    <span class="comment">// 指定哪些参数是 key</span></div><div class="line">    <span class="keyword">int</span> firstkey; <span class="comment">/* The first argument that's a key (0 = no keys) */</span></div><div class="line">    <span class="keyword">int</span> lastkey;  <span class="comment">/* The last argument that's a key */</span></div><div class="line">    <span class="keyword">int</span> keystep;  <span class="comment">/* The step between first and last key */</span></div><div class="line"></div><div class="line">    <span class="comment">// 统计信息</span></div><div class="line">    <span class="comment">// microseconds 记录了命令执行耗费的总毫微秒数</span></div><div class="line">    <span class="comment">// calls 是命令被执行的总次数</span></div><div class="line">    <span class="keyword">long</span> <span class="keyword">long</span> microseconds, calls;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>在<code>server.c</code>原文件中的<code>redisCommandTable</code>中存储这各个命令的配置：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> redisCommand redisCommandTable[] = &#123;</div><div class="line">    &#123;<span class="string">"get"</span>,getCommand,<span class="number">2</span>,<span class="string">"rF"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>&#125;,</div><div class="line">    &#123;<span class="string">"set"</span>,setCommand,<span class="number">-3</span>,<span class="string">"wm"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>&#125;,</div><div class="line">    <span class="comment">//....省略</span></div><div class="line">    &#123;<span class="string">"latency"</span>,latencyCommand,<span class="number">-2</span>,<span class="string">"aslt"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>&#125;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>想要添加一条新的命令，需要在这添加一条记录，下表是RedisCommond结构主要属性</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">属性名</th>
+<th style="text-align:center">类型</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">name</td>
+<td style="text-align:center">char *</td>
+<td style="text-align:center">命令的名字</td>
+</tr>
+<tr>
+<td style="text-align:center">function</td>
+<td style="text-align:center">redisCommandProc *</td>
+<td style="text-align:center">一个指向命令的实现函数的指针</td>
+</tr>
+<tr>
+<td style="text-align:center">arity</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">参数的数量。可以用 -N 表示 &gt;= N</td>
+</tr>
+<tr>
+<td style="text-align:center">sflags</td>
+<td style="text-align:center">char *</td>
+<td style="text-align:center">字符串形式的 FLAG ，用来计算以下的真实 FLAG</td>
+</tr>
+<tr>
+<td style="text-align:center">flags</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">位掩码形式的 FLAG ，根据 sflags 的字符串计算得出</td>
+</tr>
+<tr>
+<td style="text-align:center">get_keys_proc</td>
+<td style="text-align:center">redisGetKeysProc *</td>
+<td style="text-align:center">一个可选的函数，用于从命令中取出 key 参数，仅在以下三个参数都不足以表示 key 参数时使用</td>
+</tr>
+<tr>
+<td style="text-align:center">first_key_index</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">第一个 key 参数的位置</td>
+</tr>
+<tr>
+<td style="text-align:center">last_key_index</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">最后一个 key 参数的位置</td>
+</tr>
+<tr>
+<td style="text-align:center">key_step</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">从 first 参数和 last 参数之间，所有 key 的步数（step）</td>
+</tr>
+<tr>
+<td style="text-align:center">microseconds</td>
+<td style="text-align:center">long</td>
+<td style="text-align:center">执行这个命令耗费的总微秒数</td>
+</tr>
+<tr>
+<td style="text-align:center">calls</td>
+<td style="text-align:center">long</td>
+<td style="text-align:center">命令被执行的总次数</td>
+</tr>
+</tbody>
+</table>
+<p>下表是各个FLAG的意义：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">标识</th>
+<th style="text-align:center">意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">w</td>
+<td style="text-align:center">写入命令，可能会修改 key space</td>
+</tr>
+<tr>
+<td style="text-align:center">r</td>
+<td style="text-align:center">读命令，不修改 key space</td>
+</tr>
+<tr>
+<td style="text-align:center">m</td>
+<td style="text-align:center">可能会占用大量内存的命令，调用时对内存占用进行检查</td>
+</tr>
+<tr>
+<td style="text-align:center">a</td>
+<td style="text-align:center">管理用途的命令，比如 SAVE 和 SHUTDOWN</td>
+</tr>
+<tr>
+<td style="text-align:center">p</td>
+<td style="text-align:center">发布/订阅相关的命令</td>
+</tr>
+<tr>
+<td style="text-align:center">f</td>
+<td style="text-align:center">无视 server.dirty ，强制复制这个命令。</td>
+</tr>
+<tr>
+<td style="text-align:center">s</td>
+<td style="text-align:center">不允许在脚本中使用的命令</td>
+</tr>
+<tr>
+<td style="text-align:center">R</td>
+<td style="text-align:center">随机命令。命令是非确定性的，对于同样的命令，同样的参数，同样的键，结果可能不同。</td>
+</tr>
+<tr>
+<td style="text-align:center">S</td>
+<td style="text-align:center">如果命令在 Lua 脚本中执行，那么对输出进行排序，从而得出确定性的输出。</td>
+</tr>
+<tr>
+<td style="text-align:center">I</td>
+<td style="text-align:center">允许在载入数据库时使用的命令。</td>
+</tr>
+<tr>
+<td style="text-align:center">t</td>
+<td style="text-align:center">允许在附属节点带有过期数据时执行的命令。</td>
+</tr>
+<tr>
+<td style="text-align:center">M</td>
+<td style="text-align:center">不要在 MONITOR 模式下自动广播的命令。</td>
+</tr>
+<tr>
+<td style="text-align:center">k</td>
+<td style="text-align:center">为这个命令执行一个显式的 ASKING，使得在集群模式下，一个被标示为 importing 的槽可以接收这命令。</td>
+</tr>
+<tr>
+<td style="text-align:center">F</td>
+<td style="text-align:center">快速命令：时间复杂度是O(1)或者 O(log(N))，在内核调度时间内从不延迟执行。会触发DEL的命令不是快速命令。</td>
+</tr>
+</tbody>
+</table>
+<p>参照上述含义，我们将<code>GSET</code>命令配置如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> redisCommand redisCommandTable[] = &#123;</div><div class="line">    <span class="comment">//....省略</span></div><div class="line">    &#123;<span class="string">"gset"</span>,gsetCommand,<span class="number">4</span>,<span class="string">"wmF"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>&#125;,</div><div class="line">    &#123;<span class="string">"gget"</span>,ggetCommand,<span class="number">3</span>,<span class="string">"rF"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>&#125;,</div><div class="line">    &#123;<span class="string">"gdel"</span>,gdelCommand,<span class="number">-3</span>,<span class="string">"wF"</span>,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>&#125;,</div><div class="line">    <span class="comment">//....省略</span></div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>接下来，实现<code>gsetCommand</code>方法，<code>gsetCommand</code>方法通过修改<code>hsetCommand</code>方法得来</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">gsetCommand</span><span class="params">(client *c)</span> </span>&#123;</div><div class="line">    <span class="keyword">int</span> update;</div><div class="line">    robj *o;</div><div class="line">    sds value;</div><div class="line">      </div><div class="line">    <span class="comment">//取出或新创建spatial对象</span></div><div class="line">    <span class="keyword">if</span> ((o = spatialTypeLookupWriteOrCreate(c,c-&gt;argv[<span class="number">1</span>])) == <span class="literal">NULL</span>) <span class="keyword">return</span>;</div><div class="line">      </div><div class="line">    <span class="comment">//检查几何数据合法性，并转化成sds类型</span></div><div class="line">    <span class="keyword">if</span> ((value = decodeSdsOrReply(c,c-&gt;argv[<span class="number">3</span>]-&gt;ptr)) == <span class="literal">NULL</span>) <span class="keyword">return</span>;</div><div class="line">      </div><div class="line">    <span class="comment">//设置field和value到sptial对象，并更新对象中的R树索引</span></div><div class="line">    update = spatialTypeSet(o,c-&gt;argv[<span class="number">2</span>]-&gt;ptr,value, <span class="number">1</span>);</div><div class="line">    sdsfree(value);</div><div class="line">    </div><div class="line">     <span class="comment">// 返回状态：显示 field-value 对是新添加还是更新</span></div><div class="line">    addReply(c, update ? shared.czero : shared.cone);</div><div class="line">    </div><div class="line">    <span class="comment">// 发送键修改信号</span></div><div class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</div><div class="line">    </div><div class="line">    <span class="comment">// 发送事件通知</span></div><div class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_HASH,<span class="string">"gset"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</div><div class="line">    </div><div class="line">    <span class="comment">// 将服务器设为脏</span></div><div class="line">    server.dirty++;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>spatialTypeLookupWriteOrCreate</code>函数中不仅要初始化存储空间数据的哈希结构，也要初始化R树索引。<code>spatialTypeSet</code>函数中要实时更新R树索引值。</p>
+<p>下面是<code>ggetCommand</code>方法:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">ggetCommand</span><span class="params">(client *c)</span> </span>&#123;</div><div class="line">    robj *o;</div><div class="line">    <span class="keyword">if</span> ((o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk)) == <span class="literal">NULL</span> ||</div><div class="line">        checkType(c,o,OBJ_SPATIAL)) <span class="keyword">return</span>;</div><div class="line">  </div><div class="line">    <span class="comment">// 取出并返回域的值</span></div><div class="line">    addGeomHashFieldToReply(c, o, c-&gt;argv[<span class="number">2</span>]-&gt;ptr);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>在<code>addHashFieldToReply</code>上面包装了一层，主要作用将WKB形式二进制数据decode成WKT形式文本数据进行返回。</p>
+<p>下面是<code>gdelCommand</code>方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">gdelCommand</span><span class="params">(client *c)</span> </span>&#123;</div><div class="line">    robj *o;</div><div class="line">    <span class="keyword">int</span> j, deleted = <span class="number">0</span>, keyremoved = <span class="number">0</span>;</div><div class="line"></div><div class="line">    <span class="comment">// 取出对象</span></div><div class="line">    <span class="keyword">if</span> ((o = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</div><div class="line">        checkType(c,o,REDIS_HASH)) <span class="keyword">return</span>;</div><div class="line"></div><div class="line">    <span class="comment">// 删除指定域值对</span></div><div class="line">    <span class="keyword">for</span> (j = <span class="number">2</span>; j &lt; c-&gt;argc; j++) &#123;</div><div class="line">        <span class="keyword">if</span> (spatialTypeDelete(o, c-&gt;argv[j]-&gt;ptr, <span class="literal">NULL</span>)) &#123;</div><div class="line"></div><div class="line">            <span class="comment">// 成功删除一个域值对时进行计数</span></div><div class="line">            deleted++;</div><div class="line"></div><div class="line">            <span class="comment">// 如果spatial对象中的哈希已经为空，那么删除这个对象</span></div><div class="line">            <span class="keyword">if</span> (spatialTypeLength(o) == <span class="number">0</span>) &#123;</div><div class="line">                dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</div><div class="line">                keyremoved = <span class="number">1</span>;</div><div class="line">                <span class="keyword">break</span>;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">// 只要有至少一个域值对被修改了，那么执行以下代码</span></div><div class="line">    <span class="keyword">if</span> (deleted) &#123;</div><div class="line">        <span class="comment">// 发送键修改信号</span></div><div class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</div><div class="line"></div><div class="line">        <span class="comment">// 发送事件通知</span></div><div class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_HASH,<span class="string">"gdel"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</div><div class="line"></div><div class="line">        <span class="comment">// 发送事件通知</span></div><div class="line">        <span class="keyword">if</span> (keyremoved)</div><div class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,c-&gt;argv[<span class="number">1</span>],</div><div class="line">                                c-&gt;db-&gt;id);</div><div class="line"></div><div class="line">        <span class="comment">// 将数据库设为脏</span></div><div class="line">        server.dirty += deleted;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">// 将成功删除的域值对数量作为结果返回给客户端</span></div><div class="line">    addReplyLongLong(c,deleted);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>spatialTypeDelete</code>中要同时删除R树中的键。</p>
+<h4 id="GSEARCH命令实现解析"><a href="#GSEARCH命令实现解析" class="headerlink" title="GSEARCH命令实现解析"></a><code>GSEARCH</code>命令实现解析</h4><h5 id="GSEARCH命令用法"><a href="#GSEARCH命令用法" class="headerlink" title="GSEARCH命令用法"></a><code>GSEARCH</code>命令用法</h5><p><code>GSEARCH</code> 命令有不同的查询模式和丰富返回结果：</p>
+<pre><code>GSEARCH key 
+  [WITHIN|INTERSECTS] 
+  [CURSOR cursor]
+  [MATCH pattern]
+  [OUTPUT COUNT|FIELD|WKT|WKB|POINT|BOUNDS]
+  (RADIUS lon lat meters)|(GEOMETRY wkt|wkb)|(BOUNDS minlon minlat maxlon maxlat)|(MEMBER key field)
+</code></pre><p>GSEARCH参数含义</p>
+<ul>
+<li>WITHIN: 完全在target指定范围里的对象会返回。</li>
+<li>INTERSECTS: 和target指定范围相交对象会返回。</li>
+<li>CURSOR:利用cursor来分批返回大量数据。目前还未实现CURSOR，现在只是默认全部返回。</li>
+<li>MATCH:用设定模式筛选返回数据的filed值。</li>
+</ul>
+<p>输出形式</p>
+<ul>
+<li>OUTPUT COUNT: 返回结果数目。</li>
+<li>OUTPUT FIELD: 只返回filed值，忽略value值。</li>
+<li>OUTPUT WKT: 返回WKT形式结果，这是默认参数。</li>
+<li>OUTPUT WKB: 返回WKB形式结果。</li>
+<li>OUTPUT POINT: 返回结果为XY (经度, 纬度) 点串。</li>
+<li>OUTPUT BOUNDS: 返回结果为最小包围矩形 (MinX, MinY, MaxX, MaxY)。</li>
+</ul>
+<p>目标</p>
+<ul>
+<li>RADIUS: 搜索范围是一个圆圈，也就是邻近搜索。 需要中心点和半径（单位米）。</li>
+<li>GEOMETRY: 搜索范围是几何图形，格式可以为WKT|WKB。</li>
+<li>BOUNDS: 搜索范围为矩形包围盒。 需要minlon, minlat, maxlon, maxlat。</li>
+<li>MEMBER: 搜索范围是已在数据存在的一个成员。<br>#####<code>GSEARCH</code>原理</li>
+</ul>
+<p><code>GSEARCH</code>需要一个搜索上下文来保存搜索参数，这个<code>searchContext</code>结构体如下图所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> searchContext &#123;</div><div class="line">    spatial *s;</div><div class="line">    client *c;</div><div class="line">    <span class="keyword">int</span> searchType; <span class="comment">//search种类</span></div><div class="line">    <span class="keyword">int</span> targetType; <span class="comment">//搜索目标类型</span></div><div class="line">    <span class="keyword">int</span> fail; <span class="comment">//搜索成功标志</span></div><div class="line">    <span class="keyword">int</span> len; <span class="comment">//搜索results的个数</span></div><div class="line">    <span class="keyword">int</span> cap; <span class="comment">//搜索空间容量大小，根据len大小2倍扩容</span></div><div class="line">    resultItem *results; <span class="comment">//搜索的结果</span></div><div class="line">    <span class="keyword">long</span> <span class="keyword">long</span> cursor; <span class="comment">//预留的cursor游标位置，暂时值为0</span></div><div class="line">    sds pattern; <span class="comment">//field搜索pattern</span></div><div class="line">    <span class="keyword">int</span> allfields;</div><div class="line">    <span class="keyword">int</span> output;</div><div class="line">    <span class="keyword">int</span> nofields;</div><div class="line"></div><div class="line">    <span class="comment">// bounds</span></div><div class="line">    geomRect bounds;</div><div class="line"></div><div class="line">    <span class="comment">// radius</span></div><div class="line">    geomCoord center;</div><div class="line">    <span class="keyword">double</span> meters;</div><div class="line"></div><div class="line">    <span class="comment">// geometry</span></div><div class="line">    geom g;</div><div class="line">    <span class="keyword">int</span> sz;</div><div class="line"></div><div class="line">&#125; searchContext;</div></pre></td></tr></table></figure>
+<p><code>gsearch</code>函数主要分三个步骤：</p>
+<ol>
+<li>解析<code>gsearch</code>参数，确定<code>searchContext</code>中内容。</li>
+<li>进行查询。</li>
+<li>返回结果。目前只支持全部返回。</li>
+</ol>
+<p>第一个步骤没有什么技巧，没什么值得说的。第二个步骤有一些技巧。说说第二个怎么做的。</p>
+<p>查询存在两个阶段：首先进行R树索引筛选，筛选出候选集，然后对后选集进行遍历求精。第一阶段的R树搜索是自顶向下搜索，是个递归的过程。看每个节点MBR范围和目标MBR范围有没有overlap。一直递归搜索到R树的叶子节点。这时候开始第二阶段遍历求精，我们在R树搜索函数中会传入iterator函数指针，这时候执行iterator函数，进行遍历求精，填充返回结果。下面是代码逻辑：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div></pre></td><td class="code"><pre><div class="line">int rtreeSearch(rtree *tr, double minX, double minY, double maxX, double maxY, rtreeSearchFunc iterator, void *userdata)&#123;</div><div class="line">	if (!tr || !tr-&gt;root)&#123;</div><div class="line">		return 0;</div><div class="line">	&#125;</div><div class="line">	if (iterator)&#123;</div><div class="line">		iteratorUserData ud = &#123;iterator, userdata&#125;;</div><div class="line">		return search(tr-&gt;root, makeRect(minX, minY, maxX, maxY), iteratorFunc, &amp;ud);</div><div class="line">	&#125; else&#123;</div><div class="line">		return search(tr-&gt;root, makeRect(minX, minY, maxX, maxY), NULL, NULL);</div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">static int search(nodeT *node, rectT rect, int(*iterator)(rectT rect, void *item, void *userdata), void *userdata)&#123;</div><div class="line">    int counter = 0;</div><div class="line">    if (node) &#123;</div><div class="line">        if (node-&gt;level &gt; 0) &#123;//中间节点</div><div class="line">            for (int index = 0; index &lt; node-&gt;count; index++) &#123;</div><div class="line">                if (overlap(rect, node-&gt;branch[index].rect)) &#123;</div><div class="line">                    counter += search(node-&gt;branch[index].child, rect, iterator, userdata);</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125; else &#123;//叶子节点</div><div class="line">            for (int index = 0; index &lt; node-&gt;count; index++) &#123;</div><div class="line">                if (overlap(rect, node-&gt;branch[index].rect)) &#123;</div><div class="line">                    if (iterator)&#123;</div><div class="line">                        if (!iterator(node-&gt;branch[index].rect, node-&gt;branch[index].item, userdata))&#123;</div><div class="line">                            return counter;</div><div class="line">                        &#125;</div><div class="line">                    &#125;</div><div class="line">                    counter++;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    return counter;</div><div class="line">&#125;</div><div class="line"></div><div class="line">static int searchIterator(double minX, double minY, double maxX, double maxY, void *item, void *userdata)&#123;</div><div class="line">    (void)(minX);(void)(minY);(void)(maxX);(void)(maxY); // unused vars.</div><div class="line"></div><div class="line">    searchContext *ctx = userdata;</div><div class="line"></div><div class="line">    // 搜索field</div><div class="line">    uint64_t nidx = (uint64_t)item;</div><div class="line">    sds sidx = sdsnewlen(&amp;nidx, 8);</div><div class="line">    unsigned char *vstr = NULL;</div><div class="line">    unsigned int vlen = UINT_MAX;</div><div class="line">    long long vll = LLONG_MAX;</div><div class="line">    int res = hashTypeGetValue(ctx-&gt;s-&gt;idxhash, sidx, &amp;vstr, &amp;vlen, &amp;vll);</div><div class="line">    sdsfree(sidx);</div><div class="line">    if (res == C_ERR)&#123;</div><div class="line">        return 1;</div><div class="line">    &#125;</div><div class="line">    if (!(ctx-&gt;allfields || </div><div class="line">        stringmatchlen(ctx-&gt;pattern,sdslen(ctx-&gt;pattern),(const char*)vstr,vlen,0))) &#123;</div><div class="line">        return 1;</div><div class="line">    &#125;</div><div class="line">    char *field = (char*)vstr;</div><div class="line">    int fieldLen = vlen;</div><div class="line">    sds sfield = sdsnewlen(field, fieldLen);</div><div class="line"></div><div class="line"></div><div class="line">    // 搜索空间结构</div><div class="line">    res = hashTypeGetValue(ctx-&gt;s-&gt;h, sfield, &amp;vstr, &amp;vlen, &amp;vll);</div><div class="line">    sdsfree(sfield);</div><div class="line">    if (res == C_ERR)&#123;</div><div class="line">        return 1;</div><div class="line">    &#125;</div><div class="line">    char *value = (char*)vstr;</div><div class="line">    int valueLen = vlen;</div><div class="line"></div><div class="line">    geom g = (geom)value;</div><div class="line"></div><div class="line">    int match = matchSearch(g, ctx-&gt;m, ctx-&gt;targetType, ctx-&gt;searchType, ctx-&gt;center, ctx-&gt;meters);</div><div class="line">    if (!match)&#123;</div><div class="line">        return 1;</div><div class="line">    &#125;</div><div class="line">    // 复制结果数据</div><div class="line">    if (ctx-&gt;len == ctx-&gt;cap)&#123;</div><div class="line">        int ncap = ctx-&gt;cap;</div><div class="line">        if (ncap == 0)&#123;</div><div class="line">            ncap = 1;</div><div class="line">        &#125; else &#123;</div><div class="line">            ncap *= 2;</div><div class="line">        &#125;</div><div class="line">        resultItem *nresults = zrealloc(ctx-&gt;results, ncap*sizeof(resultItem));</div><div class="line">        if (!nresults)&#123;</div><div class="line">            addReplyError(ctx-&gt;c, "out of memory");</div><div class="line">            ctx-&gt;fail = 1;</div><div class="line">            return 0;</div><div class="line">        &#125;</div><div class="line">        ctx-&gt;results = nresults;</div><div class="line">        ctx-&gt;cap = ncap;</div><div class="line">    &#125;</div><div class="line">    ctx-&gt;results[ctx-&gt;len].field = field;    </div><div class="line">    ctx-&gt;results[ctx-&gt;len].fieldLen = fieldLen;</div><div class="line">    ctx-&gt;results[ctx-&gt;len].value = value;  </div><div class="line">    ctx-&gt;results[ctx-&gt;len].valueLen = valueLen;  </div><div class="line">    ctx-&gt;len++;</div><div class="line">    return 1;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>第三个步骤根据Output选项，进行返回。目前是将所有查询到结果一股脑返回。未来会加入cursor支持。</p>
+<h3 id="RDB和AOF支持"><a href="#RDB和AOF支持" class="headerlink" title="RDB和AOF支持"></a>RDB和AOF支持</h3><p>为了支持两种持久化操作，分别在RDB和AOF文件逻辑中加入处理代码。</p>
+<h4 id="RDB持久化"><a href="#RDB持久化" class="headerlink" title="RDB持久化"></a>RDB持久化</h4><p><code>OBJ_SPATIAL</code>对象需要持久化的是<code>spatial</code>结构体中的存储空间数据的哈希结构。所以用哈希结构保存函数即可。主要逻辑加入在<code>/src/rdb.c</code>中，主要是save和load逻辑。</p>
+<ol>
+<li><code>save</code>:添加了<code>RDB_TYPE_SPATIAL_ZIPLIST</code>和<code>RDB_TYPE_SPATIAL</code>类型，<code>save</code>逻辑加入在<code>rdbSaveObjectType</code>,<code>rdbSaveObject</code>两个函数中。</li>
+<li><code>load</code>:<code>load</code>逻辑添加在<code>rdbLoadObject</code>函数中，我们从系统中得到还原出来的hash结构，重新遍历这个hash结构，重构<code>OBJ_SPATIAL</code>对象。</li>
+</ol>
+<h4 id="AOF持久化"><a href="#AOF持久化" class="headerlink" title="AOF持久化"></a>AOF持久化</h4><p>aof部分主要逻辑在重写指令部分，添加了重写<code>OBJ_SPATIAL</code>对象函数,利用了<code>GMSET</code>命令。主要逻辑加入在<code>/src/aof.c</code>中，主要是<code>rewriteAppendOnlyFile</code>函数中，然后模仿<code>rewriteHashObject</code>函数加入了<code>rewriteSpatialObject</code>函数。</p>
+<h2 id="未来改进想法"><a href="#未来改进想法" class="headerlink" title="未来改进想法"></a>未来改进想法</h2><ol>
+<li>改进<code>GSEARCH</code>命令，使其支持cursor操作。估计要保存遍历到R树节点信息，利用栈。</li>
+<li>增加数据源Geojson支持.</li>
+</ol>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a href="https://yq.aliyun.com/articles/62844" target="_blank" rel="external">阿里云Redis GEO地理位置功能</a></p>
+<p><a href="https://redis.io/" target="_blank" rel="external">Redis官网</a></p>
+
       
     </div>
 
@@ -384,7 +630,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/redis-gis/" rel="tag"># -redis -gis</a>
+            <a href="/tags/redis/" rel="tag"># redis</a>
+          
+            <a href="/tags/gis/" rel="tag"># gis</a>
           
         </div>
       
@@ -453,8 +701,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview sidebar-panel sidebar-panel-active">
+      <section class="site-overview sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/avatar.gif"
@@ -491,7 +748,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-count">4</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -516,6 +773,22 @@
 
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于Redis空间数据组织"><span class="nav-number">2.</span> <span class="nav-text">基于Redis空间数据组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis的GIS扩展"><span class="nav-number">3.</span> <span class="nav-text">Redis的GIS扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spatial对象结构"><span class="nav-number">3.1.</span> <span class="nav-text">Spatial对象结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移植新命令"><span class="nav-number">3.2.</span> <span class="nav-text">移植新命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加新命令流程"><span class="nav-number">3.2.1.</span> <span class="nav-text">添加新命令流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GSEARCH命令实现解析"><span class="nav-number">3.2.2.</span> <span class="nav-text">GSEARCH命令实现解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH命令用法"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">GSEARCH命令用法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDB和AOF支持"><span class="nav-number">3.3.</span> <span class="nav-text">RDB和AOF支持</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RDB持久化"><span class="nav-number">3.3.1.</span> <span class="nav-text">RDB持久化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AOF持久化"><span class="nav-number">3.3.2.</span> <span class="nav-text">AOF持久化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#未来改进想法"><span class="nav-number">4.</span> <span class="nav-text">未来改进想法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -548,7 +821,7 @@
 <div class="theme-info">
   主题 -
   <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
-    NexT.Pisces
+    NexT.Mist
   </a>
 </div>
 
@@ -627,13 +900,6 @@
 
   
   
-
-
-  <script type="text/javascript" src="/js/src/affix.js?v=5.1.1"></script>
-
-  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.1"></script>
-
-
 
   
   <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
