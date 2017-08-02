@@ -100,24 +100,18 @@
 
 
 
-<meta name="description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
-
-GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta name="description" content="Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Redis空间引擎设计">
 <meta property="og:url" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/index.html">
 <meta property="og:site_name" content="gmshepard's tech blog">
-<meta property="og:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
-
-GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta property="og:description" content="Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。">
 <meta property="og:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-1.jpg">
 <meta property="og:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-2.jpg">
-<meta property="og:updated_time" content="2017-08-02T11:28:59.549Z">
+<meta property="og:updated_time" content="2017-08-02T17:16:00.230Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis空间引擎设计">
-<meta name="twitter:description" content="前言Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。
-
-GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区">
+<meta name="twitter:description" content="Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。">
 <meta name="twitter:image" content="http://gmshepard.github.io/2017/06/15/Redis空间引擎设计/1-1.jpg">
 
 
@@ -367,7 +361,8 @@ GeoHash是一种地址编码，通过切分地图区域为小方块（切分次�
       
 
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。</p>
+        <p>Redis从3.2版本开始对GEO功能进行了支持，这个功能可以将用户给定的点地理位置信息储存起来， 并对这些信息进行操作。GEO背后原理是基于Geohash，利用Sorted set（有序集合）实现的。</p>
+<a id="more"></a>
 <blockquote>
 <p>GeoHash是一种地址编码，通过切分地图区域为小方块（切分次数越多，精度越高），它能把二维的经纬度编码成一维的字符串。也就是说，理论上geohash字符串表示的并不是一个点，而是一个矩形区域，只要矩形区域足够小，达到所需精度即可。</p>
 </blockquote>
@@ -645,8 +640,8 @@ GeoHash是一种地址编码，通过切分地图区域为小方块（切分次�
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/05/16/AnlysisofAlgorithm/" rel="next" title="Anlysis of Algorithm">
-                <i class="fa fa-chevron-left"></i> Anlysis of Algorithm
+              <a href="/2017/03/02/数据库索引简介/" rel="next" title="数据库索引简介">
+                <i class="fa fa-chevron-left"></i> 数据库索引简介
               </a>
             
           </div>
@@ -783,7 +778,7 @@ GeoHash是一种地址编码，通过切分地图区域为小方块（切分次�
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基于Redis空间数据组织"><span class="nav-number">2.</span> <span class="nav-text">基于Redis空间数据组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis的GIS扩展"><span class="nav-number">3.</span> <span class="nav-text">Redis的GIS扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spatial对象结构"><span class="nav-number">3.1.</span> <span class="nav-text">Spatial对象结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移植新命令"><span class="nav-number">3.2.</span> <span class="nav-text">移植新命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加新命令流程"><span class="nav-number">3.2.1.</span> <span class="nav-text">添加新命令流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GSEARCH命令实现解析"><span class="nav-number">3.2.2.</span> <span class="nav-text">GSEARCH命令实现解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH命令用法"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">GSEARCH命令用法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH原理"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">GSEARCH原理</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDB和AOF支持"><span class="nav-number">3.3.</span> <span class="nav-text">RDB和AOF支持</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RDB持久化"><span class="nav-number">3.3.1.</span> <span class="nav-text">RDB持久化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AOF持久化"><span class="nav-number">3.3.2.</span> <span class="nav-text">AOF持久化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#未来改进想法"><span class="nav-number">4.</span> <span class="nav-text">未来改进想法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#基于Redis空间数据组织"><span class="nav-number">1.</span> <span class="nav-text">基于Redis空间数据组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis的GIS扩展"><span class="nav-number">2.</span> <span class="nav-text">Redis的GIS扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spatial对象结构"><span class="nav-number">2.1.</span> <span class="nav-text">Spatial对象结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#移植新命令"><span class="nav-number">2.2.</span> <span class="nav-text">移植新命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加新命令流程"><span class="nav-number">2.2.1.</span> <span class="nav-text">添加新命令流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GSEARCH命令实现解析"><span class="nav-number">2.2.2.</span> <span class="nav-text">GSEARCH命令实现解析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH命令用法"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">GSEARCH命令用法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#GSEARCH原理"><span class="nav-number">2.2.2.2.</span> <span class="nav-text">GSEARCH原理</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDB和AOF支持"><span class="nav-number">2.3.</span> <span class="nav-text">RDB和AOF支持</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#RDB持久化"><span class="nav-number">2.3.1.</span> <span class="nav-text">RDB持久化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#AOF持久化"><span class="nav-number">2.3.2.</span> <span class="nav-text">AOF持久化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#未来改进想法"><span class="nav-number">3.</span> <span class="nav-text">未来改进想法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
             
 
           </div>
