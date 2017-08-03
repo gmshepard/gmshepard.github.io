@@ -107,7 +107,7 @@
 <meta property="og:site_name" content="gmshepard's tech blog">
 <meta property="og:description" content="Redis中，用type命令可以查看当前键的数据结构，它们分别是：string（字符串）、hash（哈希）、 list（列表）、set（集合）、zset（有序集合）。但这些只是Redis对外的数据结构。实际上每种数据结构都有自己的底层的内部编码实现，而且是多种实现，这样Redis会在合适的场景选择合适的内部编码。">
 <meta property="og:image" content="http://gmshepard.github.io/2017/02/03/Redis中的数据结构/1-1.png">
-<meta property="og:updated_time" content="2017-08-02T18:27:38.288Z">
+<meta property="og:updated_time" content="2017-08-03T02:37:46.791Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis中的数据结构">
 <meta name="twitter:description" content="Redis中，用type命令可以查看当前键的数据结构，它们分别是：string（字符串）、hash（哈希）、 list（列表）、set（集合）、zset（有序集合）。但这些只是Redis对外的数据结构。实际上每种数据结构都有自己的底层的内部编码实现，而且是多种实现，这样Redis会在合适的场景选择合适的内部编码。">
@@ -364,16 +364,8 @@
 <a id="more"></a>
 <p>如下图所示</p>
 <p><img src="/2017/02/03/Redis中的数据结构/1-1.png" alt=""></p>
-<p> Redis这样设计有两个好处：第一，可以改进内部编码，而对外的数据结构和命令没有影响，这样一旦开发出更优秀的内部编码，无需改动外部数据结构和命令， 例如 Redis3. 2 提供了 quicklist，结合了ziplist和linkedlist两者的优势，为列表类型提供了一种更为优秀的内部编码实现，而对外部用户来说基本感知不到。第二，多种内部编码实现可以在不同场景下发挥各自的优势， 例如 ziplist 比较节省内存， 但是在列表元素比较多的情况下， 性能会有所下降，这时候 Redis会根据配置选项将列表类型的内部实现转换为 linkedlist。</p>
-<p>下面介绍几个重要内部编码</p>
-<h3 id="sds（简单动态字符串）"><a href="#sds（简单动态字符串）" class="headerlink" title="sds（简单动态字符串）"></a>sds（简单动态字符串）</h3><p>sds是在Redis中被广泛使用的字符串结构，它的全称是Simple Dynamic String。与其它语言环境中出现的字符串相比，它具有如下显著的特点：</p>
-<ul>
-<li>可动态扩展内存。sds表示的字符串其内容可以修改，也可以追加。</li>
-<li>二进制安全（Binary Safe）。sds能存储任意二进制数据，而不仅仅是可打印字符。</li>
-<li>与传统的C语言字符串类型兼容。这个的含义接下来马上会讨论。</li>
-</ul>
-<h4 id="sds数据结构定义"><a href="#sds数据结构定义" class="headerlink" title="sds数据结构定义"></a>sds数据结构定义</h4><p>在<code>/src/sds.h</code>可以找到sds的定义：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div></pre></td></tr></table></figure>
+<p>Redis这样设计有两个好处：第一，可以改进内部编码，而对外的数据结构和命令没有影响，这样一旦开发出更优秀的内部编码，无需改动外部数据结构和命令， 例如 Redis3. 2 提供了 quicklist，结合了ziplist和linkedlist两者的优势，为列表类型提供了一种更为优秀的内部编码实现，而对外部用户来说基本感知不到。第二，多种内部编码实现可以在不同场景下发挥各自的优势， 例如 ziplist 比较节省内存， 但是在列表元素比较多的情况下， 性能会有所下降，这时候 Redis会根据配置选项将列表类型的内部实现转换为 linkedlist。</p>
+
       
     </div>
 
@@ -477,17 +469,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview sidebar-panel">
+      <section class="site-overview sidebar-panel sidebar-panel-active">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
           <img class="site-author-image" itemprop="image"
                src="/images/avatar.gif"
@@ -502,7 +485,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives/">
-                <span class="site-state-item-count">6</span>
+                <span class="site-state-item-count">7</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -549,22 +532,6 @@
 
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#sds（简单动态字符串）"><span class="nav-number">1.</span> <span class="nav-text">sds（简单动态字符串）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#sds数据结构定义"><span class="nav-number">1.1.</span> <span class="nav-text">sds数据结构定义</span></a></li></ol></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
