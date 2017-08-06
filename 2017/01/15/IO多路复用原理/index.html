@@ -100,17 +100,17 @@
 
 
 
-<meta name="description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件 也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的">
+<meta name="description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的时">
 <meta property="og:type" content="article">
 <meta property="og:title" content="I/O多路复用原理">
 <meta property="og:url" content="http://gmshepard.github.io/2017/01/15/IO多路复用原理/index.html">
 <meta property="og:site_name" content="gmshepard's tech blog">
-<meta property="og:description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件 也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的">
+<meta property="og:description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的时">
 <meta property="og:image" content="http://gmshepard.github.io/2017/01/15/IO多路复用原理/1-1.png">
-<meta property="og:updated_time" content="2017-08-02T19:17:29.032Z">
+<meta property="og:updated_time" content="2017-08-05T08:21:52.671Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="I/O多路复用原理">
-<meta name="twitter:description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件 也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的">
+<meta name="twitter:description" content="I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的时">
 <meta name="twitter:image" content="http://gmshepard.github.io/2017/01/15/IO多路复用原理/1-1.png">
 
 
@@ -360,7 +360,7 @@
       
 
       
-        <p>I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件 也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的时间，预设定时间内没有事件发生时，会返回。</p>
+        <p>I/O多路复用简单来说就是监听感兴趣的 I/O 事件，例如读事件，写事件等，同时也要维护一个以文件描述符为主键，数据为某个预设函数的事件表，这里其实就是一个数组或者链表。当事件触发时，比如某个文件描述符可读，系统会返回文件描述符值，用这个值在事件表中找到相应的数据项（包括回调函数等），从而实现回调。同样的，定时事件也是可以实现的，因为系统提供的 I/O 多路复用技术中的函数允许我们设置等待超时的时间，预设定时间内没有事件发生时，会返回。</p>
 <a id="more"></a>
 <p>Linux中利用I/O多路复用机制的系统调用主要有<strong>select</strong>、<strong>poll</strong>、<strong>epoll</strong>三种。<strong>select</strong>、<strong>poll</strong>、<strong>epoll</strong>本质上都是同步I/O，因为他们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的。要完成对I/O流的复用需要完成如下几个事情：</p>
 <p>1）用户态怎么将文件句柄传递到内核态？<br>2）内核态怎么判断I/O流可读可写？<br>3）内核怎么通知监控者有I/O流可读可写？<br>4）监控者如何找到可读可写的I/O流并传递给用户态应用程序？<br>5）继续循环时监控者怎样重复上述步骤？</p>
@@ -460,8 +460,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/02/03/Redis中的数据结构(1)——robj/" rel="prev" title="Redis中的数据结构">
-                Redis中的数据结构 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/02/03/Redis中的数据结构(1)——robj/" rel="prev" title="Redis中的数据结构(1)——robj">
+                Redis中的数据结构(1)——robj <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -535,7 +535,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives/">
-                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -557,7 +557,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">19</span>
+                <span class="site-state-item-count">20</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
